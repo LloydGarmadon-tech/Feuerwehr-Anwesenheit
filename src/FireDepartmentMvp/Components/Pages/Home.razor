@@ -1,0 +1,585 @@
+@page "/"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject ActivityService ActivityService
+@inject AttendanceService AttendanceService
+@inject PinService PinService
+@inject AppState AppState
+
+<PageTitle>Feuerwehr Anwesenheit</PageTitle>
+
+<header class="topbar">
+    <div>
+        <div class="eyebrow">FEUERWEHR • TOUCHDISPLAY</div>
+        <h1>Einsatz & Anwesenheit</h1>
+    </div>
+    <div class="top-actions">
+        @if (leaderMode)
+        {
+            <button class="touch-button secondary" @onclick="OpenEventDialog">+ Event starten</button>
+            <a class="touch-button ghost" href="/admin">⚙ Stammdaten</a>
+            <button class="touch-button ghost" @onclick="LockLeader">Führung sperren</button>
+        }
+        else
+        {
+            <button class="touch-button secondary" @onclick="() => showPinDialog = true">🔐 Führung</button>
+        }
+    </div>
+</header>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="notice @(isError ? "error" : "success")">@message</div>
+}
+
+@if (activities.Count == 0)
+{
+    <section class="empty-state">
+        <div class="empty-icon">✓</div>
+        <h2>Kein aktiver Vorgang</h2>
+        <p>Ein Alarm erscheint automatisch. Eine Führungskraft kann über den PIN ein Event starten.</p>
+        <div class="counter-card">
+            <strong>Demo-PIN</strong>
+            <span>1234</span>
+        </div>
+    </section>
+}
+else
+{
+    <nav class="activity-tabs" aria-label="Aktive Vorgänge">
+        @foreach (var activity in activities)
+        {
+            <button class="activity-tab @(activity.Id == selectedActivityId ? "active" : null) @(activity.Kind == ActivityKind.Mission ? "mission" : null)"
+                    @onclick="() => SelectActivityAsync(activity.Id)">
+                <span class="tab-icon">@(activity.Kind == ActivityKind.Mission ? "🚨" : "📋")</span>
+                <span>
+                    <strong>@GetTabTitle(activity)</strong>
+                    <small>@GetTabSubtitle(activity)</small>
+                </span>
+            </button>
+        }
+    </nav>
+
+    @if (SelectedActivity is not null)
+    {
+        <section class="activity-panel">
+            <div class="activity-header">
+                <div>
+                    <div class="eyebrow">@(SelectedActivity.Kind == ActivityKind.Mission ? "AKTIVER EINSATZ" : SelectedActivity.EventType?.Name?.ToUpperInvariant())</div>
+                    <h2>@SelectedActivity.Title</h2>
+                    @if (SelectedActivity.MissionDetails is not null)
+                    {
+                        <p class="mission-meta">
+                            <strong>Einsatz @SelectedActivity.MissionDetails.MissionNumber</strong>
+                            @if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.AlarmMessage))
+                            {
+                                <span>• @SelectedActivity.MissionDetails.AlarmMessage</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.Address))
+                            {
+                                <span>• @SelectedActivity.MissionDetails.Address</span>
+                            }
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="mission-meta">Gestartet @SelectedActivity.StartedAt.LocalDateTime.ToString("dd.MM.yyyy HH:mm") Uhr</p>
+                    }
+                </div>
+                @if (leaderMode)
+                {
+                    <button class="touch-button danger" @onclick="ConfirmClose">Liste schließen</button>
+                }
+            </div>
+
+            @if (SelectedActivity.Kind == ActivityKind.Event && SelectedActivity.EventType?.Layout == AttendanceLayout.FiveGroups)
+            {
+                <div class="group-tabs">
+                    @foreach (var group in groups)
+                    {
+                        <button class="group-tab @(selectedGroupId == group.Id ? "active" : null)" @onclick="() => SelectGroupAsync(group.Id)">
+                            @group.Name
+                        </button>
+                    }
+                </div>
+            }
+
+            <div class="activity-summary">
+                @if (SelectedActivity.Kind == ActivityKind.Mission)
+                {
+                    <span><strong>@attendances.Count(x => x.Status == AttendanceStatus.Responded)</strong> ausgerückt</span>
+                    <span><strong>@attendances.Count(x => x.Status == AttendanceStatus.Standby)</strong> Bereitstellung</span>
+                }
+                else
+                {
+                    <span><strong>@attendances.Count(x => x.Status == AttendanceStatus.Present)</strong> anwesend</span>
+                    <span><strong>@attendances.Count(x => x.Status == AttendanceStatus.Excused)</strong> entschuldigt</span>
+                    <span><strong>@Math.Max(0, visibleFirefighters.Count - attendances.Count(x => visibleFirefighters.Any(f => f.Id == x.FirefighterId)))</strong> offen</span>
+                }
+            </div>
+
+            <div class="people-grid">
+                @foreach (var firefighter in visibleFirefighters)
+                {
+                    var attendance = attendances.FirstOrDefault(x => x.FirefighterId == firefighter.Id);
+                    <button class="person-card @PersonCss(attendance)" @onclick="() => OpenPersonAsync(firefighter)">
+                        <span class="person-name">@firefighter.DisplayName</span>
+                        <span class="badges">
+                            @foreach (var q in firefighter.Qualifications.Select(x => x.Qualification.ShortName).OrderBy(x => x))
+                            {
+                                <span class="badge">@q</span>
+                            }
+                        </span>
+                        <span class="person-status">@AttendanceText(attendance)</span>
+                    </button>
+                }
+            </div>
+        </section>
+    }
+}
+
+@if (showPinDialog)
+{
+    <div class="modal-backdrop">
+        <div class="modal-card small">
+            <h2>Führungsfunktion</h2>
+            <p>Kurzen PIN eingeben.</p>
+            <input class="pin-input" type="password" inputmode="numeric" maxlength="8" @bind="pin" @onkeydown="PinKeyDown" autofocus />
+            <div class="modal-actions">
+                <button class="touch-button ghost" @onclick="ClosePin">Abbrechen</button>
+                <button class="touch-button primary" @onclick="UnlockLeader">Freischalten</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showEventDialog)
+{
+    <div class="modal-backdrop">
+        <div class="modal-card wide">
+            <h2>Event starten</h2>
+            <p>Art auswählen und anschließend einen Titel vergeben.</p>
+            <div class="event-type-grid">
+                @foreach (var type in eventTypes)
+                {
+                    <button class="event-type-card @(selectedEventTypeId == type.Id ? "selected" : null)" @onclick="() => selectedEventTypeId = type.Id">
+                        <strong>@type.Name</strong>
+                        <small>@(type.Layout == AttendanceLayout.FiveGroups ? "5 Gruppen" : "1 Teilnehmerliste")</small>
+                    </button>
+                }
+            </div>
+            <label class="field-label">Titel</label>
+            <input class="text-input" placeholder="z. B. Fahrzeug- und Gerätekunde" @bind="eventTitle" />
+            <div class="modal-actions">
+                <button class="touch-button ghost" @onclick="() => showEventDialog = false">Abbrechen</button>
+                <button class="touch-button primary" @onclick="CreateEventAsync">Starten</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (selectedFirefighter is not null && SelectedActivity is not null)
+{
+    <div class="modal-backdrop">
+        <div class="modal-card wide">
+            <div class="person-dialog-header">
+                <div>
+                    <div class="eyebrow">TEILNAHME</div>
+                    <h2>@selectedFirefighter.DisplayName</h2>
+                </div>
+                <button class="icon-button" @onclick="ClosePerson">×</button>
+            </div>
+
+            @if (SelectedActivity.Kind == ActivityKind.Event)
+            {
+                <div class="choice-grid two">
+                    <button class="big-choice present" @onclick="() => SetEventStatusAsync(AttendanceStatus.Present)">
+                        <span>✓</span><strong>Anwesend</strong>
+                    </button>
+                    @if (leaderMode)
+                    {
+                        <button class="big-choice excused" @onclick="() => SetEventStatusAsync(AttendanceStatus.Excused)">
+                            <span>E</span><strong>Entschuldigt</strong>
+                        </button>
+                    }
+                </div>
+                @if (SelectedAttendance is not null)
+                {
+                    <button class="touch-button ghost full" @onclick="RemoveSelectedAsync">Eintrag zurücknehmen</button>
+                }
+                @if (!leaderMode)
+                {
+                    <p class="hint">„Entschuldigt“ kann nur nach Freischaltung der Führungsfunktion gesetzt werden.</p>
+                }
+            }
+            else
+            {
+                @if (missionStep == MissionStep.Status)
+                {
+                    <div class="choice-grid two">
+                        <button class="big-choice responded" @onclick="ChooseResponded"><span>🚒</span><strong>Ausgerückt</strong></button>
+                        <button class="big-choice standby" @onclick="SetStandbyAsync"><span>⌂</span><strong>Bereitstellung</strong></button>
+                    </div>
+                    @if (SelectedAttendance is not null)
+                    {
+                        <button class="touch-button ghost full" @onclick="RemoveSelectedAsync">Eintrag löschen</button>
+                    }
+                }
+                else if (missionStep == MissionStep.Vehicle)
+                {
+                    <h3>Fahrzeug auswählen</h3>
+                    <div class="vehicle-grid">
+                        @foreach (var vehicle in vehicles)
+                        {
+                            <button class="vehicle-card" @onclick="() => ChooseVehicle(vehicle)">
+                                <strong>@vehicle.Name</strong>
+                                <small>@vehicle.CallSign</small>
+                            </button>
+                        }
+                    </div>
+                    <button class="touch-button ghost full" @onclick="() => missionStep = MissionStep.Status">Zurück</button>
+                }
+                else if (missionStep == MissionStep.Seat && selectedVehicle is not null)
+                {
+                    <h3>@selectedVehicle.Name – Sitzplatz</h3>
+                    <p class="hint">Der Sitzplatz ist optional. Bereits belegte Plätze können nicht ausgewählt werden.</p>
+                    <div class="seat-grid">
+                        @foreach (var seat in selectedVehicle.Seats.OrderBy(x => x.SortOrder))
+                        {
+                            var owner = attendances.FirstOrDefault(x => x.VehicleSeatId == seat.Id && x.FirefighterId != selectedFirefighter.Id);
+                            <button class="seat-card @(owner is not null ? "occupied" : null)" disabled="@(owner is not null)" @onclick="() => SaveRespondedAsync(seat.Id)">
+                                <strong>@seat.Name</strong>
+                                <small>@(owner is null ? "frei" : $"belegt: {owner.Firefighter.DisplayName}")</small>
+                            </button>
+                        }
+                    </div>
+                    <button class="touch-button secondary full" @onclick="() => SaveRespondedAsync(null)">Ohne Sitzplatz speichern</button>
+                    <button class="touch-button ghost full" @onclick="() => missionStep = MissionStep.Vehicle">Anderes Fahrzeug</button>
+                }
+            }
+        </div>
+    </div>
+}
+
+@if (showCloseDialog && SelectedActivity is not null)
+{
+    <div class="modal-backdrop">
+        <div class="modal-card small">
+            <h2>Vorgang schließen?</h2>
+            <p><strong>@SelectedActivity.Title</strong> wird sofort vom öffentlichen Touchdisplay entfernt.</p>
+            @if (SelectedActivity.Kind == ActivityKind.Event)
+            {
+                <p>@attendances.Count(x => x.Status == AttendanceStatus.Present) anwesend · @attendances.Count(x => x.Status == AttendanceStatus.Excused) entschuldigt</p>
+            }
+            else
+            {
+                <p>@attendances.Count(x => x.Status == AttendanceStatus.Responded) ausgerückt · @attendances.Count(x => x.Status == AttendanceStatus.Standby) Bereitstellung</p>
+            }
+            <div class="modal-actions">
+                <button class="touch-button ghost" @onclick="() => showCloseDialog = false">Abbrechen</button>
+                <button class="touch-button danger" @onclick="CloseActivityAsync">Schließen</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Activity> activities = new();
+    private List<EventType> eventTypes = new();
+    private List<FirefighterGroup> groups = new();
+    private List<Firefighter> visibleFirefighters = new();
+    private List<Attendance> attendances = new();
+    private List<Vehicle> vehicles = new();
+
+    private Guid? selectedActivityId;
+    private Guid? selectedGroupId;
+    private Firefighter? selectedFirefighter;
+    private Vehicle? selectedVehicle;
+    private Guid? selectedEventTypeId;
+    private bool leaderMode;
+    private bool showPinDialog;
+    private bool showEventDialog;
+    private bool showCloseDialog;
+    private string pin = string.Empty;
+    private string eventTitle = string.Empty;
+    private string? message;
+    private bool isError;
+    private MissionStep missionStep = MissionStep.Status;
+
+    private Activity? SelectedActivity => activities.FirstOrDefault(x => x.Id == selectedActivityId);
+    private Attendance? SelectedAttendance => selectedFirefighter is null ? null : attendances.FirstOrDefault(x => x.FirefighterId == selectedFirefighter.Id);
+
+    protected override async Task OnInitializedAsync()
+    {
+        AppState.Changed += OnStateChanged;
+        eventTypes = await ActivityService.GetEventTypesAsync();
+        groups = await AttendanceService.GetGroupsAsync();
+        vehicles = await AttendanceService.GetVehiclesAsync();
+        await ReloadAsync();
+    }
+
+    private void OnStateChanged() => _ = InvokeAsync(ReloadAsync);
+
+    private async Task ReloadAsync()
+    {
+        activities = await ActivityService.GetOpenActivitiesAsync();
+
+        if (selectedActivityId is null || activities.All(x => x.Id != selectedActivityId))
+            selectedActivityId = activities.FirstOrDefault()?.Id;
+
+        await LoadSelectedAsync();
+        StateHasChanged();
+    }
+
+    private async Task SelectActivityAsync(Guid id)
+    {
+        selectedActivityId = id;
+        selectedGroupId = null;
+        await LoadSelectedAsync();
+    }
+
+    private async Task LoadSelectedAsync()
+    {
+        attendances = new();
+        visibleFirefighters = new();
+
+        if (SelectedActivity is null)
+            return;
+
+        attendances = await AttendanceService.GetAttendancesAsync(SelectedActivity.Id);
+
+        if (SelectedActivity.Kind == ActivityKind.Event && SelectedActivity.EventType?.Layout == AttendanceLayout.FiveGroups)
+        {
+            selectedGroupId ??= groups.FirstOrDefault()?.Id;
+            visibleFirefighters = await AttendanceService.GetFirefightersAsync(selectedGroupId);
+        }
+        else
+        {
+            visibleFirefighters = await AttendanceService.GetFirefightersAsync();
+        }
+    }
+
+    private async Task SelectGroupAsync(Guid groupId)
+    {
+        selectedGroupId = groupId;
+        visibleFirefighters = await AttendanceService.GetFirefightersAsync(groupId);
+    }
+
+    private async Task OpenPersonAsync(Firefighter firefighter)
+    {
+        selectedFirefighter = firefighter;
+        selectedVehicle = null;
+        missionStep = MissionStep.Status;
+        await Task.CompletedTask;
+    }
+
+    private void ClosePerson()
+    {
+        selectedFirefighter = null;
+        selectedVehicle = null;
+        missionStep = MissionStep.Status;
+    }
+
+    private async Task SetEventStatusAsync(AttendanceStatus status)
+    {
+        if (SelectedActivity is null || selectedFirefighter is null)
+            return;
+
+        if (status == AttendanceStatus.Excused && !leaderMode)
+            return;
+
+        await RunAsync(async () =>
+        {
+            await AttendanceService.SetEventAttendanceAsync(
+                SelectedActivity.Id,
+                selectedFirefighter.Id,
+                status,
+                status == AttendanceStatus.Excused ? "Führung (PIN)" : null);
+            ClosePerson();
+        });
+    }
+
+    private void ChooseResponded() => missionStep = MissionStep.Vehicle;
+
+    private async Task SetStandbyAsync()
+    {
+        if (SelectedActivity is null || selectedFirefighter is null)
+            return;
+
+        await RunAsync(async () =>
+        {
+            await AttendanceService.SetMissionAttendanceAsync(
+                SelectedActivity.Id, selectedFirefighter.Id, AttendanceStatus.Standby, null, null);
+            ClosePerson();
+        });
+    }
+
+    private void ChooseVehicle(Vehicle vehicle)
+    {
+        selectedVehicle = vehicle;
+        missionStep = MissionStep.Seat;
+    }
+
+    private async Task SaveRespondedAsync(Guid? seatId)
+    {
+        if (SelectedActivity is null || selectedFirefighter is null || selectedVehicle is null)
+            return;
+
+        await RunAsync(async () =>
+        {
+            await AttendanceService.SetMissionAttendanceAsync(
+                SelectedActivity.Id,
+                selectedFirefighter.Id,
+                AttendanceStatus.Responded,
+                selectedVehicle.Id,
+                seatId);
+            ClosePerson();
+        });
+    }
+
+    private async Task RemoveSelectedAsync()
+    {
+        if (SelectedActivity is null || selectedFirefighter is null)
+            return;
+
+        await RunAsync(async () =>
+        {
+            await AttendanceService.RemoveAsync(SelectedActivity.Id, selectedFirefighter.Id);
+            ClosePerson();
+        });
+    }
+
+    private void OpenEventDialog()
+    {
+        selectedEventTypeId = eventTypes.FirstOrDefault()?.Id;
+        eventTitle = string.Empty;
+        showEventDialog = true;
+    }
+
+    private async Task CreateEventAsync()
+    {
+        if (!selectedEventTypeId.HasValue)
+        {
+            ShowError("Bitte eine Eventart auswählen.");
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            var activity = await ActivityService.CreateEventAsync(selectedEventTypeId.Value, eventTitle);
+            showEventDialog = false;
+            selectedActivityId = activity.Id;
+            selectedGroupId = null;
+        });
+    }
+
+    private void ConfirmClose() => showCloseDialog = true;
+
+    private async Task CloseActivityAsync()
+    {
+        if (SelectedActivity is null)
+            return;
+
+        await RunAsync(async () =>
+        {
+            await ActivityService.CloseAsync(SelectedActivity.Id, "Führung (PIN)");
+            showCloseDialog = false;
+        });
+    }
+
+    private void UnlockLeader()
+    {
+        if (!PinService.Validate(pin))
+        {
+            ShowError("PIN ist nicht korrekt.");
+            pin = string.Empty;
+            return;
+        }
+
+        leaderMode = true;
+        showPinDialog = false;
+        pin = string.Empty;
+        ShowSuccess("Führungsfunktionen freigeschaltet.");
+    }
+
+    private void LockLeader()
+    {
+        leaderMode = false;
+        showEventDialog = false;
+        ShowSuccess("Führungsfunktionen gesperrt.");
+    }
+
+    private void ClosePin()
+    {
+        showPinDialog = false;
+        pin = string.Empty;
+    }
+
+    private void PinKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+            UnlockLeader();
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        try
+        {
+            isError = false;
+            message = null;
+            await action();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+    }
+
+    private void ShowError(string text)
+    {
+        isError = true;
+        message = text;
+    }
+
+    private void ShowSuccess(string text)
+    {
+        isError = false;
+        message = text;
+    }
+
+    private static string GetTabTitle(Activity activity) =>
+        activity.MissionDetails is null ? activity.Title : $"{activity.MissionDetails.MissionNumber} {activity.Title}";
+
+    private static string GetTabSubtitle(Activity activity) =>
+        activity.MissionDetails is not null
+            ? activity.MissionDetails.Address
+            : activity.EventType?.Name ?? "Event";
+
+    private static string PersonCss(Attendance? attendance) => attendance?.Status switch
+    {
+        AttendanceStatus.Present => "present",
+        AttendanceStatus.Responded => "responded",
+        AttendanceStatus.Standby => "standby",
+        AttendanceStatus.Excused => "excused",
+        _ => string.Empty
+    };
+
+    private static string AttendanceText(Attendance? attendance) => attendance?.Status switch
+    {
+        AttendanceStatus.Present => "✓ Anwesend",
+        AttendanceStatus.Excused => "E Entschuldigt",
+        AttendanceStatus.Standby => "⌂ Bereitstellung",
+        AttendanceStatus.Responded => $"🚒 {attendance.Vehicle?.Name}{(attendance.VehicleSeat is null ? string.Empty : $" · {attendance.VehicleSeat.Name}")}",
+        _ => "Noch nicht erfasst"
+    };
+
+    public void Dispose() => AppState.Changed -= OnStateChanged;
+
+    private enum MissionStep
+    {
+        Status,
+        Vehicle,
+        Seat
+    }
+}

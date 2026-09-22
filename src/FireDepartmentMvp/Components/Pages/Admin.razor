@@ -1,0 +1,198 @@
+@page "/admin"
+@rendermode InteractiveServer
+@inject AdminService AdminService
+@inject PinService PinService
+
+<PageTitle>Stammdaten</PageTitle>
+
+<header class="topbar">
+    <div>
+        <div class="eyebrow">ADMINISTRATION</div>
+        <h1>Stammdatenpflege</h1>
+    </div>
+    <div class="top-actions">
+        <a class="touch-button ghost" href="/">Zurück zum Touchdisplay</a>
+    </div>
+</header>
+
+@if (!unlocked)
+{
+    <section class="center-card admin-login">
+        <h2>Adminbereich entsperren</h2>
+        <p>Für den Teststand wird der Führungs-PIN verwendet.</p>
+        <input class="pin-input" type="password" inputmode="numeric" maxlength="8" @bind="pin" />
+        @if (!string.IsNullOrWhiteSpace(message))
+        {
+            <div class="notice error">@message</div>
+        }
+        <button class="touch-button primary full" @onclick="Unlock">Entsperren</button>
+    </section>
+}
+else
+{
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="notice @(isError ? "error" : "success")">@message</div>
+    }
+
+    <nav class="admin-tabs">
+        <button class="group-tab @(tab == AdminTab.People ? "active" : null)" @onclick="() => tab = AdminTab.People">Personen</button>
+        <button class="group-tab @(tab == AdminTab.Vehicles ? "active" : null)" @onclick="() => tab = AdminTab.Vehicles">Fahrzeuge & Plätze</button>
+        <button class="group-tab @(tab == AdminTab.Qualifications ? "active" : null)" @onclick="() => tab = AdminTab.Qualifications">Qualifikationen</button>
+        <button class="group-tab @(tab == AdminTab.EventTypes ? "active" : null)" @onclick="() => tab = AdminTab.EventTypes">Eventtypen</button>
+    </nav>
+
+    @if (tab == AdminTab.People)
+    {
+        <section class="admin-panel">
+            <div class="admin-editor">
+                <h2>@(personId.HasValue ? "Person bearbeiten" : "Person anlegen")</h2>
+                <label class="field-label">Vorname</label>
+                <input class="text-input" @bind="firstName" />
+                <label class="field-label">Nachname</label>
+                <input class="text-input" @bind="lastName" />
+                <label class="field-label">Gruppe</label>
+                <select class="text-input" @bind="groupId">
+                    @foreach (var group in groups.Where(x => x.IsActive))
+                    {
+                        <option value="@group.Id">@group.Name</option>
+                    }
+                </select>
+                <label class="field-label">Qualifikationen</label>
+                <div class="check-grid">
+                    @foreach (var q in qualifications.Where(x => x.IsActive))
+                    {
+                        <label class="check-card"><input type="checkbox" checked="@selectedQualifications.Contains(q.Id)" @onchange="e => ToggleQualification(q.Id, Convert.ToBoolean(e.Value))" /> @q.Name (@q.ShortName)</label>
+                    }
+                </div>
+                <label class="check-card"><input type="checkbox" @bind="personActive" /> Aktiv</label>
+                <div class="modal-actions">
+                    <button class="touch-button ghost" @onclick="ResetPerson">Neu</button>
+                    <button class="touch-button primary" @onclick="SavePersonAsync">Speichern</button>
+                </div>
+            </div>
+            <div class="admin-list">
+                @foreach (var p in people)
+                {
+                    <button class="admin-row @(!p.IsActive ? "inactive" : null)" @onclick="() => EditPerson(p)">
+                        <strong>@p.DisplayName</strong>
+                        <span>@p.Group?.Name · @string.Join(", ", p.Qualifications.Select(x => x.Qualification.ShortName))</span>
+                    </button>
+                }
+            </div>
+        </section>
+    }
+    else if (tab == AdminTab.Vehicles)
+    {
+        <section class="admin-panel">
+            <div class="admin-editor">
+                <h2>@(vehicleId.HasValue ? "Fahrzeug bearbeiten" : "Fahrzeug anlegen")</h2>
+                <label class="field-label">Bezeichnung</label>
+                <input class="text-input" @bind="vehicleName" />
+                <label class="field-label">Funkrufname</label>
+                <input class="text-input" @bind="callSign" />
+                <label class="check-card"><input type="checkbox" @bind="vehicleActive" /> Aktiv</label>
+                <div class="modal-actions">
+                    <button class="touch-button ghost" @onclick="ResetVehicle">Neu</button>
+                    <button class="touch-button primary" @onclick="SaveVehicleAsync">Speichern</button>
+                </div>
+                @if (vehicleId.HasValue)
+                {
+                    <hr class="admin-separator" />
+                    <h3>Sitzplätze</h3>
+                    <div class="inline-form"><input class="text-input" placeholder="z. B. Fahrer" @bind="newSeatName" /><button class="touch-button secondary" @onclick="AddSeatAsync">+ Platz</button></div>
+                    @foreach (var seat in vehicles.First(x => x.Id == vehicleId.Value).Seats.OrderBy(x => x.SortOrder))
+                    {
+                        <button class="admin-row compact @(!seat.IsActive ? "inactive" : null)" @onclick="() => ToggleSeatAsync(seat.Id)">
+                            <strong>@seat.SortOrder. @seat.Name</strong><span>@(seat.IsActive ? "aktiv · zum Deaktivieren antippen" : "deaktiviert · zum Aktivieren antippen")</span>
+                        </button>
+                    }
+                }
+            </div>
+            <div class="admin-list">
+                @foreach (var v in vehicles)
+                {
+                    <button class="admin-row @(!v.IsActive ? "inactive" : null)" @onclick="() => EditVehicle(v)">
+                        <strong>@v.Name</strong><span>@v.CallSign · @v.Seats.Count(x => x.IsActive) aktive Plätze</span>
+                    </button>
+                }
+            </div>
+        </section>
+    }
+    else if (tab == AdminTab.Qualifications)
+    {
+        <section class="admin-panel">
+            <div class="admin-editor">
+                <h2>@(qualificationId.HasValue ? "Qualifikation bearbeiten" : "Qualifikation anlegen")</h2>
+                <label class="field-label">Name</label><input class="text-input" @bind="qualificationName" />
+                <label class="field-label">Kürzel</label><input class="text-input" @bind="qualificationShort" />
+                <label class="check-card"><input type="checkbox" @bind="qualificationActive" /> Aktiv</label>
+                <div class="modal-actions"><button class="touch-button ghost" @onclick="ResetQualification">Neu</button><button class="touch-button primary" @onclick="SaveQualificationAsync">Speichern</button></div>
+            </div>
+            <div class="admin-list">
+                @foreach (var q in qualifications)
+                {
+                    <button class="admin-row @(!q.IsActive ? "inactive" : null)" @onclick="() => EditQualification(q)"><strong>@q.Name</strong><span>@q.ShortName</span></button>
+                }
+            </div>
+        </section>
+    }
+    else
+    {
+        <section class="admin-panel">
+            <div class="admin-editor">
+                <h2>@(eventTypeId.HasValue ? "Eventtyp bearbeiten" : "Eventtyp anlegen")</h2>
+                <label class="field-label">Name</label><input class="text-input" @bind="eventTypeName" />
+                <label class="field-label">Darstellung</label>
+                <select class="text-input" @bind="eventLayout"><option value="@AttendanceLayout.SingleList">Eine Teilnehmerliste</option><option value="@AttendanceLayout.FiveGroups">Fünf Gruppen</option></select>
+                <label class="field-label">Sortierung</label><input class="text-input" type="number" @bind="eventSort" />
+                <label class="check-card"><input type="checkbox" @bind="eventActive" /> Aktiv</label>
+                <div class="modal-actions"><button class="touch-button ghost" @onclick="ResetEventType">Neu</button><button class="touch-button primary" @onclick="SaveEventTypeAsync">Speichern</button></div>
+            </div>
+            <div class="admin-list">
+                @foreach (var e in eventTypes)
+                {
+                    <button class="admin-row @(!e.IsActive ? "inactive" : null)" @onclick="() => EditEventType(e)"><strong>@e.Name</strong><span>@(e.Layout == AttendanceLayout.FiveGroups ? "5 Gruppen" : "1 Liste") · Sortierung @e.SortOrder</span></button>
+                }
+            </div>
+        </section>
+    }
+}
+
+@code {
+    private enum AdminTab { People, Vehicles, Qualifications, EventTypes }
+    private AdminTab tab;
+    private bool unlocked;
+    private string pin = "";
+    private string? message;
+    private bool isError;
+    private List<FirefighterGroup> groups = new();
+    private List<Firefighter> people = new();
+    private List<Vehicle> vehicles = new();
+    private List<Qualification> qualifications = new();
+    private List<EventType> eventTypes = new();
+
+    private Guid? personId; private string firstName=""; private string lastName=""; private Guid groupId; private bool personActive=true; private HashSet<Guid> selectedQualifications=new();
+    private Guid? vehicleId; private string vehicleName=""; private string callSign=""; private bool vehicleActive=true; private string newSeatName="";
+    private Guid? qualificationId; private string qualificationName=""; private string qualificationShort=""; private bool qualificationActive=true;
+    private Guid? eventTypeId; private string eventTypeName=""; private AttendanceLayout eventLayout=AttendanceLayout.SingleList; private int eventSort=100; private bool eventActive=true;
+
+    private async Task Unlock() { if (!PinService.Validate(pin)) { message="PIN ist nicht korrekt."; isError=true; return; } unlocked=true; pin=""; await ReloadAsync(); }
+    private async Task ReloadAsync() { groups=await AdminService.GetGroupsAsync(); people=await AdminService.GetFirefightersAsync(); vehicles=await AdminService.GetVehiclesAsync(); qualifications=await AdminService.GetQualificationsAsync(); eventTypes=await AdminService.GetEventTypesAsync(); groupId = groupId == Guid.Empty ? groups.FirstOrDefault(x=>x.IsActive)?.Id ?? Guid.Empty : groupId; }
+    private void ToggleQualification(Guid id, bool selected) { if (selected) selectedQualifications.Add(id); else selectedQualifications.Remove(id); }
+    private void EditPerson(Firefighter p) { personId=p.Id; firstName=p.FirstName; lastName=p.LastName; groupId=p.GroupId; personActive=p.IsActive; selectedQualifications=p.Qualifications.Select(x=>x.QualificationId).ToHashSet(); }
+    private void ResetPerson() { personId=null; firstName=lastName=""; groupId=groups.FirstOrDefault(x=>x.IsActive)?.Id ?? Guid.Empty; personActive=true; selectedQualifications.Clear(); }
+    private async Task SavePersonAsync() => await RunAsync(async()=>{ await AdminService.SaveFirefighterAsync(personId,firstName,lastName,groupId,personActive,selectedQualifications); await ReloadAsync(); ResetPerson(); },"Person gespeichert.");
+    private void EditVehicle(Vehicle v) { vehicleId=v.Id; vehicleName=v.Name; callSign=v.CallSign; vehicleActive=v.IsActive; newSeatName=""; }
+    private void ResetVehicle() { vehicleId=null; vehicleName=callSign=newSeatName=""; vehicleActive=true; }
+    private async Task SaveVehicleAsync() => await RunAsync(async()=>{ var v=await AdminService.SaveVehicleAsync(vehicleId,vehicleName,callSign,vehicleActive); vehicleId=v.Id; await ReloadAsync(); EditVehicle(vehicles.Single(x=>x.Id==v.Id)); },"Fahrzeug gespeichert.");
+    private async Task AddSeatAsync() { if (!vehicleId.HasValue) return; await RunAsync(async()=>{await AdminService.AddSeatAsync(vehicleId.Value,newSeatName); newSeatName=""; await ReloadAsync();},"Sitzplatz hinzugefügt."); }
+    private async Task ToggleSeatAsync(Guid id) => await RunAsync(async()=>{await AdminService.ToggleSeatAsync(id); await ReloadAsync();},"Sitzplatz geändert.");
+    private void EditQualification(Qualification q) { qualificationId=q.Id; qualificationName=q.Name; qualificationShort=q.ShortName; qualificationActive=q.IsActive; }
+    private void ResetQualification() { qualificationId=null; qualificationName=qualificationShort=""; qualificationActive=true; }
+    private async Task SaveQualificationAsync() => await RunAsync(async()=>{await AdminService.SaveQualificationAsync(qualificationId,qualificationName,qualificationShort,qualificationActive); await ReloadAsync(); ResetQualification();},"Qualifikation gespeichert.");
+    private void EditEventType(EventType e) { eventTypeId=e.Id; eventTypeName=e.Name; eventLayout=e.Layout; eventSort=e.SortOrder; eventActive=e.IsActive; }
+    private void ResetEventType() { eventTypeId=null; eventTypeName=""; eventLayout=AttendanceLayout.SingleList; eventSort=100; eventActive=true; }
+    private async Task SaveEventTypeAsync() => await RunAsync(async()=>{await AdminService.SaveEventTypeAsync(eventTypeId,eventTypeName,eventLayout,eventSort,eventActive); await ReloadAsync(); ResetEventType();},"Eventtyp gespeichert.");
+    private async Task RunAsync(Func<Task> action, string success) { try { await action(); message=success; isError=false; } catch(Exception ex) { message=ex.Message; isError=true; } }
+}

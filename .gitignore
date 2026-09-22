@@ -1,28 +1,29 @@
 # Build output
 **/bin/
 **/obj/
+artifacts/
+deploy/
 
-# IDE
-.vs/
-.vscode/
-.idea/
-*.user
-*.suo
-
-# Runtime data
+# Local application data
 *.db
 *.db-shm
 *.db-wal
-*.sqlite
-*.sqlite3
 
-# Deployment output
-deploy/
-publish/
+# User/IDE files
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
 
-# OS
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+TestResults/
+
+# OS files
 .DS_Store
 Thumbs.db
-
-# Logs
-*.log

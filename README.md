@@ -1,87 +1,77 @@
-# Feuerwehr-Anwesenheit
+# Feuerwehr Einsatz & Anwesenheit
 
-Touch-optimierte Webanwendung für Feuerwehrwachen zur Übernahme von Alarmen aus **Alamos FE2**, Erfassung der Einsatz- und Dienstanwesenheit sowie Verwaltung von Fahrzeugen, Sitzplätzen und Qualifikationen.
+Touch-optimierte Webanwendung für die Feuerwehrwache. Die Anwendung nimmt Alarme aus **Alamos FE2** entgegen, zeigt parallele Einsätze an und erfasst Einsatz- sowie Dienstanwesenheiten.
 
-## Funktionsumfang
+> Status: MVP / Testbetrieb. Nicht als alleinige Alarmierungs- oder Einsatzführungssoftware vorgesehen.
 
-- Alarme aus Alamos FE2 übernehmen
-- mehrere parallele Einsätze als Tabs anzeigen
-- jährliche Einsatzzahl erfassen
-- Einsatzteilnahme je Mitglied dokumentieren
-  - ausgerückt
-  - in Bereitschaft
-  - Fahrzeug
-  - optionaler Sitzplatz
-- Sitzplätze abhängig vom gewählten Fahrzeug und der aktuellen Belegung anbieten
-- offene Einträge bis zum Abschluss korrigieren
-- abgeschlossene Einsätze aus der Touch-Oberfläche ausblenden
-- Anwesenheitslisten für Dienste und Veranstaltungen
-- fünf Gruppen bei Gruppen-, Sonder-, Wehr- und Zugdiensten
-- Einzelansicht für Übungen, Veranstaltungen, Maschinisten, Führungsunterstützung und Atemschutzdienste
-- Entschuldigungen durch Führungskräfte
-- Stammdatenpflege für Personen, Gruppen, Qualifikationen, Fahrzeuge und Sitzplätze
-- Archivbasis für spätere Statistiken
-- Windows-/Kiosk-Deployment
+## Funktionen
+
+- Alarmannahme über REST (`POST /api/alarm`) und Alamos FE2 (`GET /api/alarm/fe2`)
+- FE2-Diagnose-Endpunkt für die Inbetriebnahme
+- mehrere parallele Einsätze und Veranstaltungen als Tabs
+- jährliche fortlaufende Einsatznummer
+- Status `Ausgerückt` und `Bereitstellung`
+- Fahrzeug- und optionale Sitzplatzwahl mit Doppelbelegungsschutz
+- Dienste mit fünf Gruppen sowie Veranstaltungen mit einer Teilnehmerliste
+- Anwesenheit und durch Führungskräfte gesetzte Entschuldigungen
+- Stammdatenpflege für Personen, Qualifikationen, Fahrzeuge, Sitzplätze und Eventtypen
+- SQLite für den MVP
+- Windows-x64 Self-Contained Deployment und Edge-Kioskstart
+
+## Voraussetzungen für Entwicklung
+
+- .NET 10 SDK
+- Windows, Linux oder macOS für die Entwicklung
+- für den vorgesehenen Wachenbetrieb: Windows x64 und Microsoft Edge für den Kioskmodus
+
+## Schnellstart
+
+```powershell
+dotnet restore .\FireDepartmentMvp.sln
+dotnet run --project .\src\FireDepartmentMvp\FireDepartmentMvp.csproj
+```
+
+Die tatsächlich verwendeten URLs stehen anschließend in der Konsole (`Now listening on ...`). Der Demo-/Führungs-PIN lautet im Teststand `1234`.
 
 ## Projektstruktur
 
 ```text
-src/FireDepartmentMvp/     Anwendung
-docs/                      Entwickler- und Betriebsdokumentation
-scripts/deploy/             Windows-Publish und Wachenstart
-scripts/test/               Testaufrufe für API und FE2
+src/FireDepartmentMvp/     Anwendung (Blazor, Domain, EF Core, Services)
+docs/                      Architektur, FE2, Deployment, Entwicklerdokumentation
+scripts/deploy/             Publish-, Start-, Stop- und Kiosk-Skripte
+scripts/test/               Testaufrufe für REST und FE2
+FireDepartmentMvp.sln       Visual-Studio-/dotnet-Solution
+NuGet.Config                reproduzierbare NuGet-Konfiguration
 ```
 
-Weitere Dokumentation:
+## Dokumentation
 
 - [Entwicklerdokumentation](docs/development.md)
-- [Architektur](docs/architecture.md)
+- [Architektur und Fachkonzept](docs/architecture.md)
 - [Alamos-FE2-Integration](docs/fe2-integration.md)
 - [Deployment auf dem Wachen-PC](docs/station-deployment.md)
 
-## Lokal starten
+## Testalarm
 
-Voraussetzung ist das zum Projekt passende .NET SDK.
+Bei lokal gestarteter Anwendung den Port aus der Konsolenausgabe verwenden. Beispiel:
 
 ```powershell
-dotnet restore
-dotnet run --project .\src\FireDepartmentMvp\FireDepartmentMvp.csproj
+$body = @{
+    externalId = "TEST-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+    keyword = "FEU"
+    message = "Testalarm Gebaeudebrand"
+    street = "Musterstrasse"
+    houseNumber = "12"
+    city = "Musterstadt"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+    -Uri "http://localhost:60979/api/alarm" `
+    -Method Post `
+    -ContentType "application/json; charset=utf-8" `
+    -Body ([Text.Encoding]::UTF8.GetBytes($body))
 ```
 
-Die von ASP.NET Core ausgegebenen lokalen URLs verwenden. Der Port kann beim lokalen Entwicklungsstart von der späteren Wachen-Konfiguration abweichen.
+## Datenschutz
 
-## Alarm-API
-
-Standard-JSON-Schnittstelle:
-
-```text
-POST /api/alarm
-```
-
-FE2-Diagnose:
-
-```text
-GET /api/alarm/fe2/debug
-```
-
-FE2-Alarmübernahme:
-
-```text
-GET /api/alarm/fe2
-```
-
-Health Check:
-
-```text
-GET /api/health
-```
-
-Details zur Alamos-Konfiguration stehen in `docs/fe2-integration.md`.
-
-## Datenhaltung
-
-Der MVP verwendet SQLite. Laufzeitdatenbanken gehören nicht ins Repository und werden über `.gitignore` ausgeschlossen.
-
-## Status
-
-Das Projekt befindet sich im MVP-/Teststadium. Vor einem dauerhaften Produktivbetrieb sollten insbesondere Authentifizierung/PIN-Konzept, Datenschutz, Backup, Protokollierung, Datenbankmigrationen und automatisierte Tests weiter ausgebaut werden.
+Die Anwendung verarbeitet personenbezogene Anwesenheits- und Einsatzdaten. Vor einem produktiven Betrieb müssen insbesondere Berechtigungskonzept, PIN-/Benutzerverwaltung, Backup, Aufbewahrung/Löschung, Protokollierung und Netzwerkschutz verbindlich festgelegt werden.

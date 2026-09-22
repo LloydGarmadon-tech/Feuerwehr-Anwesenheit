@@ -1,0 +1,9 @@
+@using Microsoft.AspNetCore.Components.Routing
+@using FireDepartmentMvp.Components.Layout
+
+<Router AppAssembly="@typeof(Program).Assembly">
+    <Found Context="foundRouteData">
+        <RouteView RouteData="@foundRouteData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@foundRouteData" Selector="h1" />
+    </Found>
+</Router>
