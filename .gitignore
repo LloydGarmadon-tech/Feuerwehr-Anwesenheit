@@ -1,0 +1,28 @@
+# Build output
+**/bin/
+**/obj/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Runtime data
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Deployment output
+deploy/
+publish/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
