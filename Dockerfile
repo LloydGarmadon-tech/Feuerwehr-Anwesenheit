@@ -1,14 +1,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY src/FireDepartmentMvp/FireDepartmentMvp.csproj src/FireDepartmentMvp/
-RUN dotnet restore src/FireDepartmentMvp/FireDepartmentMvp.csproj
-
 COPY . .
+
 RUN dotnet publish src/FireDepartmentMvp/FireDepartmentMvp.csproj \
     -c Release \
-    -o /app/publish \
-    --no-restore
+    -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
