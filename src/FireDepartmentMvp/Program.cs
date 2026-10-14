@@ -161,6 +161,9 @@ app.MapGet("/api/alarm/fe2", async (
     var houseNumber = Query(request, "houseNumber", "house", "hausnummer", "hsnr");
     var city = Query(request, "city", "stadt", "ort");
     var rawAlarmTime = Query(request, "alarmTime", "timestamp");
+    var alarmDate = Query(request, "alarmDate");
+    var alarmClock = Query(request, "alarmClock");
+    var resources = Query(request, "resources");
 
     DateTimeOffset? alarmTime = null;
     if (!string.IsNullOrWhiteSpace(rawAlarmTime))
@@ -169,6 +172,47 @@ app.MapGet("/api/alarm/fe2", async (
             alarmTime = parsed;
         else
             logger.LogWarning("FE2 lieferte einen nicht interpretierbaren Zeitstempel: {AlarmTime}", rawAlarmTime);
+    }
+
+    if (alarmTime is null && alarmDate is not null && alarmClock is not null)
+    {
+        var formats = new[]
+        {
+            "dd.MM.yyyy HH:mm",
+            "dd.MM.yyyy HH:mm:ss",
+            "d.M.yyyy H:mm",
+            "yyyy-MM-dd HH:mm",
+            "yyyy-MM-dd HH:mm:ss"
+        };
+
+        if (DateTime.TryParseExact(
+                $"{alarmDate} {alarmClock}",
+                formats,
+                System.Globalization.CultureInfo.GetCultureInfo("de-DE"),
+                System.Globalization.DateTimeStyles.None,
+                out var localTime))
+        {
+            var zone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+
+            if (!zone.IsInvalidTime(localTime) && !zone.IsAmbiguousTime(localTime))
+            {
+                alarmTime = new DateTimeOffset(
+                    localTime,
+                    zone.GetUtcOffset(localTime));
+            }
+            else
+            {
+                logger.LogWarning(
+                    "FE2 lieferte eine ungueltige oder mehrdeutige Alarmzeit: {Date} {Clock}",
+                    alarmDate, alarmClock);
+            }
+        }
+        else
+        {
+            logger.LogWarning(
+                "FE2-Alarmzeit konnte nicht interpretiert werden: {Date} {Clock}",
+                alarmDate, alarmClock);
+        }
     }
 
     if (string.IsNullOrWhiteSpace(keyword))
@@ -193,7 +237,8 @@ app.MapGet("/api/alarm/fe2", async (
             Message: message,
             Street: street,
             HouseNumber: houseNumber,
-            City: city);
+            City: city,
+            Resources: resources);
 
         var result = await activities.ImportMissionAsync(alarm, cancellationToken);
         var details = result.Activity.MissionDetails;

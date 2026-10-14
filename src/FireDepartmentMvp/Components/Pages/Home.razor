@@ -9,11 +9,24 @@
 <PageTitle>Feuerwehr Anwesenheit</PageTitle>
 
 <header class="topbar">
-    <div>
-        <div class="eyebrow">FEUERWEHR • TOUCHDISPLAY</div>
-        <h1>Einsatz & Anwesenheit</h1>
+    <div class="header-brand">
+        <img class="header-crest"
+             src="/images/feuerwehr-logo.png"
+             alt="Wappen Feuerwehr Lauenburg" />
+        <div class="header-brand-text">
+            <img class="header-wordmark"
+                 src="/images/feuerwehr-schriftzug.png"
+                 alt="Freiwillige Feuerwehr Lauenburg" />
+        </div>
+        <div class="header-divider"></div>
+        <h1 class="header-title">Einsatz &amp; Anwesenheit</h1>
     </div>
-    <div class="top-actions">
+    <div class="header-right">
+        <div class="header-datetime">
+            <span>@currentTime.ToString("dddd, dd. MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("de-DE"))</span>
+            <strong>@currentTime.ToString("HH:mm")</strong>
+        </div>
+        <div class="top-actions">
         @if (leaderMode)
         {
             <button class="touch-button secondary" @onclick="OpenEventDialog">+ Event starten</button>
@@ -24,6 +37,7 @@
         {
             <button class="touch-button secondary" @onclick="() => showPinDialog = true">🔐 Führung</button>
         }
+        </div>
     </div>
 </header>
 
@@ -38,10 +52,7 @@
         <div class="empty-icon">✓</div>
         <h2>Kein aktiver Vorgang</h2>
         <p>Ein Alarm erscheint automatisch. Eine Führungskraft kann über den PIN ein Event starten.</p>
-        <div class="counter-card">
-            <strong>Demo-PIN</strong>
-            <span>1234</span>
-        </div>
+
     </section>
 }
 else
@@ -49,9 +60,32 @@ else
     <nav class="activity-tabs" aria-label="Aktive Vorgänge">
         @foreach (var activity in activities)
         {
-            <button class="activity-tab @(activity.Id == selectedActivityId ? "active" : null) @(activity.Kind == ActivityKind.Mission ? "mission" : null)"
+            <button class="activity-tab @(activity.Id == selectedActivityId ? "active" : null) @(activity.Kind == ActivityKind.Mission ? "mission" : "event")"
                     @onclick="() => SelectActivityAsync(activity.Id)">
-                <span class="tab-icon">@(activity.Kind == ActivityKind.Mission ? "🚨" : "📋")</span>
+                <span class="tab-icon" aria-hidden="true">
+                    @if (activity.Kind == ActivityKind.Mission)
+                    {
+                        <svg viewBox="0 0 24 24" width="22" height="22"
+                             fill="none" stroke="currentColor"
+                             stroke-width="1.8" stroke-linecap="round"
+                             stroke-linejoin="round">
+                            <path d="M6 17V10a6 6 0 0 1 12 0v7"/>
+                            <path d="M4 17h16v3H4z"/>
+                            <path d="M12 2v2M3 7l2 1M21 7l-2 1"/>
+                        </svg>
+                    }
+                    else
+                    {
+                        <svg viewBox="0 0 24 24" width="22" height="22"
+                             fill="none" stroke="currentColor"
+                             stroke-width="1.8" stroke-linecap="round"
+                             stroke-linejoin="round">
+                            <rect x="4" y="5" width="16" height="16" rx="2"/>
+                            <path d="M8 3v4M16 3v4M4 10h16"/>
+                            <path d="M8 14h3M8 17h6"/>
+                        </svg>
+                    }
+                </span>
                 <span>
                     <strong>@GetTabTitle(activity)</strong>
                     <small>@GetTabSubtitle(activity)</small>
@@ -63,32 +97,121 @@ else
     @if (SelectedActivity is not null)
     {
         <section class="activity-panel">
-            <div class="activity-header">
-                <div>
-                    <div class="eyebrow">@(SelectedActivity.Kind == ActivityKind.Mission ? "AKTIVER EINSATZ" : SelectedActivity.EventType?.Name?.ToUpperInvariant())</div>
-                    <h2>@SelectedActivity.Title</h2>
-                    @if (SelectedActivity.MissionDetails is not null)
+            <div class="activity-header @(SelectedActivity.Kind == ActivityKind.Mission ? "mission-header-grid" : "event-header")">
+                <div class="mission-head-primary">
+                    @if (SelectedActivity.Kind == ActivityKind.Mission)
                     {
-                        <p class="mission-meta">
-                            <strong>Einsatz @SelectedActivity.MissionDetails.MissionNumber</strong>
-                            @if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.AlarmMessage))
-                            {
-                                <span>• @SelectedActivity.MissionDetails.AlarmMessage</span>
-                            }
-                            @if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.Address))
-                            {
-                                <span>• @SelectedActivity.MissionDetails.Address</span>
-                            }
-                        </p>
+                        <div class="eyebrow">AKTUELLER EINSATZ</div>
+                        <h2>@SelectedActivity.Title</h2>
                     }
                     else
                     {
-                        <p class="mission-meta">Gestartet @SelectedActivity.StartedAt.LocalDateTime.ToString("dd.MM.yyyy HH:mm") Uhr</p>
+                        <div class="eyebrow">DIENST / VERANSTALTUNG</div>
+                        <h2>@(SelectedActivity.EventType?.Name ?? "Veranstaltung")</h2>
+                        <p class="event-header-title">@SelectedActivity.Title</p>
+                    }
+
+                    @if (SelectedActivity.MissionDetails is not null)
+                    {
+                        <div class="mission-primary-details">
+                            <div class="mission-primary-number">
+                                Einsatz @SelectedActivity.MissionDetails.MissionNumber
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.AlarmMessage))
+                            {
+                                <div class="mission-primary-message">
+                                    @SelectedActivity.MissionDetails.AlarmMessage
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (SelectedActivity.MissionDetails is not null)
+                    {
+
+                    }
+                    else
+                    {
+                        <p class="mission-meta">
+                            Gestartet @SelectedActivity.StartedAt.LocalDateTime.ToString("dd.MM.yyyy HH:mm") Uhr
+                        </p>
                     }
                 </div>
+
+                @if (SelectedActivity.MissionDetails is not null)
+                {
+                    <div class="mission-head-info">
+                        <div class="mission-info-item">
+                            <div class="mission-info-label">
+                                <span aria-hidden="true">◷</span> ALARMIERT
+                            </div>
+                            <div class="mission-info-value">
+                                @TimeZoneInfo.ConvertTime(
+                                    SelectedActivity.MissionDetails.AlarmedAt,
+                                    GermanTimeZone).ToString("dd.MM.yyyy HH:mm")&nbsp;Uhr
+                            </div>
+                            <div class="mission-info-relative">
+                                @{
+                                    var elapsed = currentTime - SelectedActivity.MissionDetails.AlarmedAt;
+                                    var elapsedText = elapsed.TotalMinutes < 0
+                                        ? "Alarmierung liegt in der Zukunft"
+                                        : elapsed.TotalMinutes < 1
+                                            ? "gerade eben"
+                                            : elapsed.TotalHours < 1
+                                                ? $"vor {(int)elapsed.TotalMinutes} Minuten"
+                                                : elapsed.TotalDays < 1
+                                                    ? $"vor {(int)elapsed.TotalHours} Stunden"
+                                                    : $"vor {(int)elapsed.TotalDays} Tagen";
+                                }
+                                @elapsedText
+                            </div>
+                        </div>
+
+                        <div class="mission-info-item">
+                            <div class="mission-info-label">
+                                <svg viewBox="0 0 24 24" width="24" height="24"
+                                     fill="none" stroke="currentColor"
+                                     stroke-width="2.3" stroke-linecap="round"
+                                     stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0z"/>
+                                    <circle cx="12" cy="10" r="2.5"/>
+                                </svg> EINSATZORT
+                            </div>
+                            <div class="mission-info-value">
+                                @SelectedActivity.MissionDetails.Address
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mission-head-resources">
+                        @if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.AlarmedResources))
+                        {
+                            var resources = SelectedActivity.MissionDetails.AlarmedResources
+                                .Split(new[] { '\r', '\n' },
+                                    StringSplitOptions.RemoveEmptyEntries |
+                                    StringSplitOptions.TrimEntries);
+
+                            <div class="mission-resources">
+                                <div class="mission-resources-heading">
+                                    🚒 @resources.Length alarmierte Einsatzmittel
+                                </div>
+                                <div class="mission-resources-list">
+                                    @foreach (var resource in resources)
+                                    {
+                                        <div class="mission-resource">@resource</div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
                 @if (leaderMode)
                 {
-                    <button class="touch-button danger" @onclick="ConfirmClose">Liste schließen</button>
+                    <button class="touch-button danger mission-close-button"
+                            @onclick="ConfirmClose">
+                        Liste schließen
+                    </button>
                 }
             </div>
 
@@ -107,8 +230,33 @@ else
             <div class="activity-summary">
                 @if (SelectedActivity.Kind == ActivityKind.Mission)
                 {
-                    <span><strong>@attendances.Count(x => x.Status == AttendanceStatus.Responded)</strong> ausgerückt</span>
-                    <span><strong>@attendances.Count(x => x.Status == AttendanceStatus.Standby)</strong> Bereitstellung</span>
+                    <div class="mission-status-counter">
+                        <svg viewBox="0 0 24 24" width="24" height="24"
+                             fill="none" stroke="currentColor" stroke-width="1.8"
+                             stroke-linecap="round" stroke-linejoin="round"
+                             aria-hidden="true">
+                            <path d="M3 16V7h12v9"/>
+                            <path d="M15 10h3l3 4v2h-6"/>
+                            <circle cx="7" cy="17" r="2"/>
+                            <circle cx="18" cy="17" r="2"/>
+                            <path d="M3 17h2m4 0h7"/>
+                        </svg>
+                        <span class="mission-status-label">Ausgerückt</span>
+                        <strong>@attendances.Count(x => x.Status == AttendanceStatus.Responded)</strong>
+                    </div>
+                    <div class="mission-status-counter">
+                        <svg viewBox="0 0 24 24" width="24" height="24"
+                             fill="none" stroke="currentColor" stroke-width="1.8"
+                             stroke-linecap="round" stroke-linejoin="round"
+                             aria-hidden="true">
+                            <circle cx="9" cy="8" r="3"/>
+                            <path d="M3 20v-2a6 6 0 0 1 12 0v2"/>
+                            <path d="M17 5a3 3 0 0 1 0 6"/>
+                            <path d="M18 14a5 5 0 0 1 3 5v1"/>
+                        </svg>
+                        <span class="mission-status-label">Bereitstellung</span>
+                        <strong>@attendances.Count(x => x.Status == AttendanceStatus.Standby)</strong>
+                    </div>
                 }
                 else
                 {
@@ -116,10 +264,30 @@ else
                     <span><strong>@attendances.Count(x => x.Status == AttendanceStatus.Excused)</strong> entschuldigt</span>
                     <span><strong>@Math.Max(0, visibleFirefighters.Count - attendances.Count(x => visibleFirefighters.Any(f => f.Id == x.FirefighterId)))</strong> offen</span>
                 }
+                <div class="mission-search">
+                    <svg class="search-icon" viewBox="0 0 24 24"
+                         width="22" height="22" fill="none"
+                         stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round"
+                         aria-hidden="true">
+                        <circle cx="10.5" cy="10.5" r="6.5"/>
+                        <path d="m16 16 5 5"/>
+                    </svg>
+                    <input placeholder="Kamerad/in suchen ..."
+                           aria-label="Kamerad oder Kameradin suchen"
+                           @bind="memberSearch"
+                           @bind:event="oninput" />
+                </div>
             </div>
 
             <div class="people-grid">
-                @foreach (var firefighter in visibleFirefighters)
+                @foreach (var firefighter in visibleFirefighters.Where(f =>
+                    f.DisplayName.Contains(memberSearch.Trim(), StringComparison.OrdinalIgnoreCase) && (memberQualificationFilter == "" || f.Qualifications.Any(q => q.Qualification.ShortName == memberQualificationFilter))
+                    && (memberStatusFilter == "all"
+                        || (memberStatusFilter == "open"
+                            ? !attendances.Any(a => a.FirefighterId == f.Id)
+                            : attendances.Any(a => a.FirefighterId == f.Id
+                                && a.Status.ToString().Equals(memberStatusFilter, StringComparison.OrdinalIgnoreCase))))))
                 {
                     var attendance = attendances.FirstOrDefault(x => x.FirefighterId == firefighter.Id);
                     <button class="person-card @PersonCss(attendance)" @onclick="() => OpenPersonAsync(firefighter)">
@@ -290,12 +458,22 @@ else
     private List<Firefighter> visibleFirefighters = new();
     private List<Attendance> attendances = new();
     private List<Vehicle> vehicles = new();
+    private string memberSearch = string.Empty;
+    private string memberStatusFilter = "all";
+    private string memberQualificationFilter = "";
 
     private Guid? selectedActivityId;
     private Guid? selectedGroupId;
     private Firefighter? selectedFirefighter;
     private Vehicle? selectedVehicle;
     private Guid? selectedEventTypeId;
+    private readonly CancellationTokenSource clockCancellation = new();
+    private static readonly TimeZoneInfo GermanTimeZone =
+        TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+
+    private DateTime currentTime =
+        TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, GermanTimeZone);
+
     private bool leaderMode;
     private bool showPinDialog;
     private bool showEventDialog;
@@ -312,6 +490,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         AppState.Changed += OnStateChanged;
+        _ = UpdateClockAsync();
         eventTypes = await ActivityService.GetEventTypesAsync();
         groups = await AttendanceService.GetGroupsAsync();
         vehicles = await AttendanceService.GetVehiclesAsync();
@@ -549,12 +728,14 @@ else
     }
 
     private static string GetTabTitle(Activity activity) =>
-        activity.MissionDetails is null ? activity.Title : $"{activity.MissionDetails.MissionNumber} {activity.Title}";
+        activity.MissionDetails is null
+            ? activity.EventType?.Name ?? "Veranstaltung"
+            : $"{activity.MissionDetails.MissionNumber} {activity.Title}";
 
     private static string GetTabSubtitle(Activity activity) =>
         activity.MissionDetails is not null
             ? activity.MissionDetails.Address
-            : activity.EventType?.Name ?? "Event";
+            : activity.Title;
 
     private static string PersonCss(Attendance? attendance) => attendance?.Status switch
     {
@@ -574,7 +755,29 @@ else
         _ => "Noch nicht erfasst"
     };
 
-    public void Dispose() => AppState.Changed -= OnStateChanged;
+    private async Task UpdateClockAsync()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync(clockCancellation.Token))
+            {
+                currentTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, GermanTimeZone);
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Komponente wurde geschlossen.
+        }
+    }
+
+    public void Dispose()
+    {
+        clockCancellation.Cancel();
+        AppState.Changed -= OnStateChanged;
+    }
 
     private enum MissionStep
     {

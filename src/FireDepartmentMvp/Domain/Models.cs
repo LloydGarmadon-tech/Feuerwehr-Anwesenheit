@@ -62,6 +62,7 @@ public class MissionDetails
     public string? HouseNumber { get; set; }
     public string? City { get; set; }
     public DateTimeOffset AlarmedAt { get; set; }
+    public string? AlarmedResources { get; set; }
 
     public string MissionNumber => $"{Number:D3}/{Year}";
     public string Address => string.Join(" ", new[] { Street, HouseNumber }.Where(x => !string.IsNullOrWhiteSpace(x))) +
@@ -150,4 +151,5 @@ public record IncomingAlarmDto(
     string? Message,
     string? Street,
     string? HouseNumber,
-    string? City);
+    string? City,
+    string? Resources = null);

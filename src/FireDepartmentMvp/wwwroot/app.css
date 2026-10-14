@@ -135,3 +135,863 @@ a.touch-button { display: inline-flex; align-items: center; justify-content: cen
 .admin-login { margin-top: 7vh; }
 select.text-input { appearance: auto; }
 @media (max-width: 1000px) { .admin-panel { grid-template-columns: 1fr; } .admin-tabs { grid-template-columns: repeat(2,1fr); } }
+
+/* Einklappbare Einsatzmittelanzeige auf dem Touchmonitor */
+.mission-resources {
+    margin-top: 6px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.mission-resources summary {
+    display: inline-block;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: #e9eef5;
+    color: #243247;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.mission-resources-list {
+    max-height: 120px;
+    overflow-y: auto;
+    margin-top: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #f4f7fb;
+    color: #243247;
+}
+
+.mission-resource {
+    padding: 4px 0;
+    margin: 0;
+    border: 0;
+    font-size: 0.95rem;
+}
+
+/* Mitglieder-Suche und Filter */
+.member-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 18px 0;
+}
+
+.member-search,
+.member-filter {
+    min-height: 54px;
+    padding: 12px 16px;
+    border: 1px solid #46515d;
+    border-radius: 12px;
+    background: #242a30;
+    color: #f2f4f6;
+    font-size: 1rem;
+}
+
+.member-search {
+    flex: 1 1 280px;
+    min-width: 180px;
+}
+
+.member-filter {
+    flex: 0 1 220px;
+    cursor: pointer;
+}
+
+.member-search:focus,
+.member-filter:focus {
+    outline: 2px solid #bd343c;
+    outline-offset: 2px;
+}
+
+.member-count {
+    color: #b7c0c9;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+@media (max-width: 650px) {
+    .member-search,
+    .member-filter {
+        flex: 1 1 100%;
+    }
+}
+
+
+/* Feuerwehr Lauenburg – Anthrazit-Design */
+:root {
+    background: #202020;
+}
+
+html, body {
+    background: #202020;
+}
+
+.app-shell {
+    background: #202020;
+}
+
+.activity-panel {
+    background: #292929;
+    border-color: #404040;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .18);
+}
+
+.activity-tab {
+    background: #303030;
+    border-color: #454545;
+}
+
+.activity-tab.active {
+    border-color: #c63838;
+}
+
+.touch-button.secondary {
+    background: #383838;
+    border-color: #505050;
+}
+
+.touch-button.ghost {
+    background: #303030;
+    border-color: #484848;
+}
+
+.mission-resources summary {
+    background: #383838;
+    color: #f0f0f0;
+}
+
+.mission-resources-list {
+    background: #303030;
+    color: #f0f0f0;
+}
+
+/* Feuerwehr Lauenburg – Mitgliederkarten */
+.people-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.person-card {
+    min-height: 118px;
+    background: #303030;
+    border: 1px solid #494949;
+    border-radius: 14px;
+    padding: 15px 17px;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.person-card:hover {
+    border-color: #888888;
+}
+
+.person-card:focus-visible {
+    outline: 3px solid #f0f0f0;
+    outline-offset: 2px;
+}
+
+.person-card.present {
+    background: #20382c;
+    border-color: #468461;
+}
+
+.person-card.excused {
+    background: #3b3523;
+    border-color: #9b853c;
+}
+
+.person-card.responded {
+    background: #233b4d;
+    border-color: #4e86ad;
+}
+
+.person-card.standby {
+    background: #373044;
+    border-color: #8065a3;
+}
+
+.person-name {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #f5f5f5;
+}
+
+.person-status {
+    color: #c5c5c5;
+    font-size: .88rem;
+}
+
+.badge {
+    background: #414141;
+    border-color: #606060;
+    color: #f0f0f0;
+}
+
+/* Feuerwehr Lauenburg – Kopfzeile */
+.topbar .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-width: 0;
+}
+
+.topbar .header-crest {
+    display: block;
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.topbar .header-brand-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+}
+
+.topbar .header-wordmark {
+    display: block;
+    width: 220px;
+    max-width: 100%;
+    height: 65px;
+    object-fit: contain;
+    object-position: left center;
+}
+
+.topbar .header-brand-text h1 {
+    margin: 0;
+    font-size: clamp(20px, 2vw, 30px);
+    line-height: 1.2;
+}
+
+@media (max-width: 650px) {
+    .topbar .header-brand {
+        gap: 10px;
+    }
+
+    .topbar .header-crest {
+        width: 60px;
+        height: 60px;
+    }
+
+    .topbar .header-wordmark {
+        width: 160px;
+        height: 48px;
+    }
+
+    .topbar .header-brand-text h1 {
+        font-size: 18px;
+    }
+}
+
+/* Suchfeld neben den Einsatzzählern */
+.activity-summary .mission-search {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+    width: 390px;
+    padding: 12px 18px;
+    border: 1px solid #41464d;
+    border-radius: 32px;
+    background: #242424;
+}
+
+.mission-search .search-icon {
+    color: #a9d5f3;
+    font-size: 30px;
+    line-height: 1;
+}
+
+.mission-search input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: white;
+    font-size: 19px;
+}
+
+.mission-search input::placeholder {
+    color: #98a8b8;
+}
+
+/* Kopfzeile – horizontale Anordnung */
+.topbar .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.topbar .header-brand-text {
+    display: flex;
+    align-items: center;
+}
+
+.topbar .header-divider {
+    width: 1px;
+    height: 72px;
+    background: #87909a;
+    flex-shrink: 0;
+}
+
+.topbar .header-title {
+    margin: 0 0 0 10px;
+    font-size: clamp(26px, 2.5vw, 38px);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Kopfzeile – Datum, Uhrzeit und Führung */
+.topbar .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    margin-left: auto;
+}
+
+.topbar .header-datetime {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.topbar .header-datetime span {
+    color: #d5d5d5;
+    font-size: 16px;
+}
+
+.topbar .header-datetime strong {
+    color: #fff;
+    font-size: 32px;
+    line-height: 1.1;
+}
+
+.topbar .header-right .top-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Kopfzeile – klare Typografie */
+.topbar .header-title {
+    letter-spacing: normal;
+    line-height: 1.2;
+    text-shadow: none;
+    -webkit-text-stroke: 0;
+}
+
+/* Kompakte Einsatz- und Dienstkacheln */
+.activity-tabs {
+    gap: 10px;
+    padding-bottom: 8px;
+    margin-bottom: 18px;
+}
+
+.activity-tab {
+    min-width: 210px;
+    min-height: 68px;
+    padding: 12px 16px;
+    gap: 12px;
+    border: 1px solid #424242;
+    border-radius: 10px;
+    background: #292929;
+    box-shadow: none;
+}
+
+.activity-tab.mission {
+    border-left: 3px solid #a93636;
+}
+
+.activity-tab.active {
+    background: #342929;
+    border-color: #bd4545;
+    box-shadow: inset 0 0 0 1px #bd4545;
+}
+
+.activity-tab strong {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.activity-tab small {
+    font-size: 12px;
+    color: #aeb4bb;
+    margin-top: 5px;
+}
+
+.activity-tab .tab-icon {
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+/* Einsatz- und Dienstkacheln – dezentes Design */
+.activity-tab {
+    min-width: 250px;
+    min-height: 64px;
+    padding: 11px 14px;
+    gap: 12px;
+    border: 1px solid #414141;
+    border-radius: 9px;
+    background: #292929;
+    box-shadow: none;
+}
+
+.activity-tab.mission {
+    border-left: 3px solid #c63b3b;
+}
+
+.activity-tab.active,
+.activity-tab.mission.active {
+    background: #2c2c2c;
+    border-color: #555;
+    border-left-color: #e04747;
+    box-shadow: none;
+}
+
+.activity-tab .tab-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #aab5c2;
+}
+
+.activity-tab.mission .tab-icon {
+    color: #e05252;
+}
+
+.activity-tab strong {
+    font-size: 14px;
+    font-weight: 700;
+    color: #f2f2f2;
+}
+
+.activity-tab small {
+    font-size: 12px;
+    color: #a4a4a4;
+    margin-top: 4px;
+    max-width: 205px;
+}
+
+/* Kennzeichnung des aktuellen Einsatzes */
+.activity-header .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 11px;
+    margin-bottom: 12px;
+    border: 1px solid #713333;
+    border-radius: 6px;
+    background: #382525;
+    color: #f08080;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+}
+
+.activity-header .eyebrow::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ef5555;
+    flex-shrink: 0;
+}
+
+/* Einsatzdetails – Alarmierung und Standort */
+.mission-meta-modern {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin: 14px 0;
+}
+
+.mission-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #c3c9d0;
+    font-size: 14px;
+}
+
+.mission-meta-row > span:first-child {
+    width: 20px;
+    flex-shrink: 0;
+    color: #96a7b8;
+    text-align: center;
+    font-size: 19px;
+}
+
+.mission-meta-reference {
+    margin-top: 3px;
+    color: #929aa3;
+    font-size: 12px;
+}
+
+
+
+
+/* Kompakter Einsatzkopf – Mitgliederauswahl hat Vorrang */
+.activity-header.mission-header-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.2fr) minmax(0, 1.05fr);
+    align-items: center;
+    gap: 0;
+    padding-bottom: 12px;
+}
+
+.mission-header-grid .mission-head-primary {
+    min-width: 0;
+    padding: 6px 18px 6px 0;
+}
+
+.mission-header-grid .mission-head-primary h2 {
+    font-size: clamp(2.8rem, 3.6vw, 4rem);
+    line-height: 1;
+    margin: 12px 0;
+}
+
+.mission-header-grid .mission-primary-details {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    color: #c5cbd2;
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.mission-header-grid .mission-primary-number {
+    color: #e3e7ec;
+    font-weight: 600;
+}
+
+.mission-header-grid .mission-primary-message {
+    overflow-wrap: anywhere;
+}
+
+.mission-header-grid .mission-head-info {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    min-width: 0;
+    border-left: 1px solid #484848;
+    padding: 4px 10px;
+}
+
+.mission-header-grid .mission-info-item {
+    min-width: 0;
+    padding: 6px 14px;
+}
+
+.mission-header-grid .mission-info-item + .mission-info-item {
+    border-left: 1px solid #484848;
+}
+
+.mission-header-grid .mission-info-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #afc0d1;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: .025em;
+    margin-bottom: 10px;
+    white-space: nowrap;
+}
+
+.mission-header-grid .mission-info-label span,
+.mission-header-grid .mission-info-label svg {
+    color: #f04450;
+    flex-shrink: 0;
+}
+
+.mission-header-grid .mission-info-label span {
+    font-size: 23px;
+    margin: 0;
+}
+
+.mission-header-grid .mission-info-value {
+    color: #f4f5f7;
+    font-size: clamp(16px, 1.15vw, 19px);
+    font-weight: 700;
+    line-height: 1.4;
+    overflow-wrap: normal;
+}
+
+.mission-header-grid .mission-info-relative {
+    color: #b7c0cb;
+    font-size: 15px;
+    margin-top: 5px;
+}
+
+.mission-header-grid .mission-head-resources {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 6px 0 6px 16px;
+    border-left: 1px solid #484848;
+}
+
+.mission-header-grid .mission-resources {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    padding: 13px;
+    border: 1px solid #505050;
+    border-radius: 12px;
+    background: #303030;
+}
+
+.mission-header-grid .mission-resources-heading {
+    color: #f0f1f3;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.mission-header-grid .mission-resources-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    max-height: 180px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    align-content: start;
+}
+
+.mission-header-grid .mission-resource {
+    min-width: 0;
+    padding: 9px;
+    border-radius: 8px;
+    background: #3b3b3b;
+    border: 1px solid #505050;
+    color: #f0f0f0;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.mission-header-grid .mission-close-button {
+    grid-column: 1 / -1;
+    justify-self: end;
+    margin-top: 8px;
+}
+
+@media (max-width: 1150px) {
+    .activity-header.mission-header-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    }
+
+    .mission-header-grid .mission-head-resources {
+        grid-column: 1 / -1;
+        border-left: 0;
+        border-top: 1px solid #484848;
+        padding: 12px 0 0;
+    }
+}
+
+@media (max-width: 700px) {
+    .activity-header.mission-header-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .mission-header-grid .mission-head-info {
+        border-left: 0;
+        border-top: 1px solid #484848;
+        padding: 12px 0;
+    }
+
+    .mission-header-grid .mission-head-resources {
+        grid-column: 1;
+    }
+}
+
+
+/* Kompakte Statusanzeigen und Kameradensuche */
+.activity-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 12px 0 16px;
+}
+
+.activity-summary .mission-status-counter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 225px;
+    min-height: 56px;
+    padding: 10px 16px;
+    border: 1px solid #394652;
+    border-radius: 14px;
+    background: #151d25;
+    color: #e5edf5;
+}
+
+.activity-summary .mission-status-counter svg {
+    color: #f04450;
+    flex-shrink: 0;
+}
+
+.activity-summary .mission-status-label {
+    font-size: 16px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.activity-summary .mission-status-counter strong {
+    margin-left: auto;
+    color: #ffffff;
+    font-size: 23px;
+    font-weight: 800;
+}
+
+.activity-summary .mission-search {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    min-width: 260px;
+    width: min(100%, 390px);
+    margin-left: auto;
+    padding: 0 16px;
+    border: 1px solid #424b55;
+    border-radius: 14px;
+    background: #202428;
+}
+
+.activity-summary .mission-search .search-icon {
+    position: static;
+    width: 22px;
+    height: 22px;
+    color: #8ec8f3;
+    flex-shrink: 0;
+}
+
+.activity-summary .mission-search input {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #f1f4f7;
+    font-size: 16px;
+}
+
+.activity-summary .mission-search input::placeholder {
+    color: #a1b4c6;
+}
+
+@media (max-width: 850px) {
+    .activity-summary .mission-status-counter {
+        min-width: 0;
+        flex: 1 1 190px;
+    }
+
+    .activity-summary .mission-search {
+        flex: 1 1 100%;
+        width: 100%;
+        margin-left: 0;
+    }
+}
+
+/* Einheitliche Darstellung: Statusanzeigen und Kameradensuche */
+.activity-summary .mission-status-counter,
+.activity-summary .mission-search {
+    background: #202428;
+    border: 1px solid #424b55;
+}
+
+.activity-summary .mission-status-counter svg,
+.activity-summary .mission-search .search-icon {
+    color: #8ec8f3;
+}
+
+.activity-summary .mission-status-counter .mission-status-label {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    color: #e5edf5;
+}
+
+
+
+/* Dienste und Veranstaltungen – ruhige Farbgebung */
+.activity-tab.event {
+    border-left: 3px solid #607d92;
+}
+
+.activity-tab.event.active {
+    background: #29333b;
+    border-color: #536c7d;
+    border-left-color: #91b8d3;
+    box-shadow: none;
+}
+
+.activity-tab.event .tab-icon {
+    color: #9dbdd3;
+}
+
+/* Kompakter Event-Kopf statt Alarmdarstellung */
+.activity-header.event-header {
+    align-items: center;
+    min-height: 0;
+    padding-bottom: 14px;
+}
+
+.event-header .mission-head-primary {
+    min-width: 0;
+}
+
+.activity-header.event-header .eyebrow {
+    background: #293943;
+    border-color: #496477;
+    color: #a6c9df;
+    margin-bottom: 8px;
+}
+
+.activity-header.event-header .eyebrow::before {
+    background: #8eb9d3;
+}
+
+.event-header .mission-head-primary h2 {
+    font-size: clamp(2rem, 2.7vw, 3rem);
+    line-height: 1.15;
+    margin: 8px 0 6px;
+}
+
+.event-header .event-header-title {
+    color: #c3ced8;
+    font-size: 17px;
+    margin: 0 0 10px;
+    line-height: 1.4;
+}
+
+.event-header .mission-meta {
+    color: #9facb8;
+    font-size: 14px;
+    margin: 0;
+}
+
+@media (max-width: 700px) {
+    .activity-header.event-header {
+        align-items: flex-start;
+    }
+}
