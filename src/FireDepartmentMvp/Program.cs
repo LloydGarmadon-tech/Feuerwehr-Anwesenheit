@@ -164,6 +164,10 @@ app.MapGet("/api/alarm/fe2", async (
     var alarmDate = Query(request, "alarmDate");
     var alarmClock = Query(request, "alarmClock");
     var resources = Query(request, "resources");
+    var description = Query(request, "description");
+    var objectName = Query(request, "object");
+    var objectAddition = Query(request, "objectAddition");
+    var keywordAddition = Query(request, "keywordAddition");
 
     DateTimeOffset? alarmTime = null;
     if (!string.IsNullOrWhiteSpace(rawAlarmTime))
@@ -238,7 +242,11 @@ app.MapGet("/api/alarm/fe2", async (
             Street: street,
             HouseNumber: houseNumber,
             City: city,
-            Resources: resources);
+            Resources: resources,
+            Description: description,
+            Object: objectName,
+            ObjectAddition: objectAddition,
+            KeywordAddition: keywordAddition);
 
         var result = await activities.ImportMissionAsync(alarm, cancellationToken);
         var details = result.Activity.MissionDetails;

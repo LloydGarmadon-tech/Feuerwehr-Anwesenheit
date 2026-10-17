@@ -12,6 +12,7 @@ public static class SeedData
         await using var db = await factory.CreateDbContextAsync();
 
         await db.Database.EnsureCreatedAsync();
+        await DatabaseSchemaUpdater.UpdateAsync(db);
 
         if (await db.EventTypes.AnyAsync())
             return;

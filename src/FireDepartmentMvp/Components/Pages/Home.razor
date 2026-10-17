@@ -117,12 +117,29 @@ else
                             <div class="mission-primary-number">
                                 Einsatz @SelectedActivity.MissionDetails.MissionNumber
                             </div>
-                            @if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.AlarmMessage))
-                            {
-                                <div class="mission-primary-message">
-                                    @SelectedActivity.MissionDetails.AlarmMessage
-                                </div>
-                            }
+                            @if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.Description))
+{
+    <div class="mission-primary-message">
+        <strong>Meldebild:</strong>
+        @SelectedActivity.MissionDetails.Description
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.KeywordAddition))
+{
+    <div class="mission-primary-message">
+        <strong>Stichwort-Zusatz:</strong>
+        @SelectedActivity.MissionDetails.KeywordAddition
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.AlarmMessage))
+{
+    <div class="mission-primary-message">
+        <strong>Alarmtext:</strong>
+        @SelectedActivity.MissionDetails.AlarmMessage
+    </div>
+}
                         </div>
                     }
 
@@ -178,8 +195,24 @@ else
                                 </svg> EINSATZORT
                             </div>
                             <div class="mission-info-value">
-                                @SelectedActivity.MissionDetails.Address
-                            </div>
+    @SelectedActivity.MissionDetails.Address
+</div>
+
+@if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.Object))
+{
+    <div class="mission-primary-message">
+        <strong>Objekt:</strong>
+        @SelectedActivity.MissionDetails.Object
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.ObjectAddition))
+{
+    <div class="mission-primary-message">
+        <strong>Objekt-Zusatz:</strong>
+        @SelectedActivity.MissionDetails.ObjectAddition
+    </div>
+}
                         </div>
                     </div>
 

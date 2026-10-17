@@ -58,6 +58,10 @@ public class MissionDetails
     public int Number { get; set; }
     public string Keyword { get; set; } = string.Empty;
     public string? AlarmMessage { get; set; }
+    public string? Description { get; set; }
+    public string? Object { get; set; }
+    public string? ObjectAddition { get; set; }
+    public string? KeywordAddition { get; set; }
     public string? Street { get; set; }
     public string? HouseNumber { get; set; }
     public string? City { get; set; }
@@ -152,4 +156,8 @@ public record IncomingAlarmDto(
     string? Street,
     string? HouseNumber,
     string? City,
-    string? Resources = null);
+    string? Resources = null,
+    string? Description = null,
+    string? Object = null,
+    string? ObjectAddition = null,
+    string? KeywordAddition = null);

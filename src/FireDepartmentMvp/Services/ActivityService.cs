@@ -111,6 +111,18 @@ public class ActivityService(IDbContextFactory<AppDbContext> factory, AppState s
                 if (alarm.Resources is not null)
                     details.AlarmedResources = alarm.Resources.Trim();
 
+                if (alarm.Description is not null)
+                    details.Description = alarm.Description.Trim();
+
+                 if (alarm.Object is not null)
+                   details.Object = alarm.Object.Trim();
+
+                 if (alarm.ObjectAddition is not null)
+                   details.ObjectAddition = alarm.ObjectAddition.Trim();
+
+                 if (alarm.KeywordAddition is not null)
+                   details.KeywordAddition = alarm.KeywordAddition.Trim();
+
                 // AlarmTime wird bei Nachträgen nur übernommen, wenn FE2 explizit eine Zeit mitsendet.
                 if (alarm.AlarmTime is not null)
                     details.AlarmedAt = alarm.AlarmTime.Value;
@@ -145,7 +157,11 @@ public class ActivityService(IDbContextFactory<AppDbContext> factory, AppState s
                 HouseNumber = alarm.HouseNumber?.Trim(),
                 City = alarm.City?.Trim(),
                 AlarmedAt = alarmTime,
-                AlarmedResources = alarm.Resources?.Trim()
+                AlarmedResources = alarm.Resources?.Trim(),
+                Description = alarm.Description?.Trim(),
+                Object = alarm.Object?.Trim(),
+                ObjectAddition = alarm.ObjectAddition?.Trim(),
+                KeywordAddition = alarm.KeywordAddition?.Trim()
             }
         };
 
