@@ -118,28 +118,19 @@ else
                                 Einsatz @SelectedActivity.MissionDetails.MissionNumber
                             </div>
                             @if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.Description))
-{
-    <div class="mission-primary-message">
-        <strong>Meldebild:</strong>
-        @SelectedActivity.MissionDetails.Description
-    </div>
-}
+                            {
+                                <div class="mission-primary-message">
+                                    <strong>Meldebild:</strong>
+                                    @SelectedActivity.MissionDetails.Description
+                                </div>
+                            }
 
-@if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.KeywordAddition))
-{
-    <div class="mission-primary-message">
-        <strong>Stichwort-Zusatz:</strong>
-        @SelectedActivity.MissionDetails.KeywordAddition
-    </div>
-}
-
-@if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.AlarmMessage))
-{
-    <div class="mission-primary-message">
-        <strong>Alarmtext:</strong>
-        @SelectedActivity.MissionDetails.AlarmMessage
-    </div>
-}
+                            @if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.AlarmMessage))
+                            {
+                                <div class="mission-primary-message mission-freetext">
+                                    @SelectedActivity.MissionDetails.AlarmMessage
+                                </div>
+                            }
                         </div>
                     }
 

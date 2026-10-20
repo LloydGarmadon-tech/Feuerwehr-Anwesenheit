@@ -995,3 +995,17 @@ html, body {
         align-items: flex-start;
     }
 }
+
+/* FE2-Freitext: kompakter Zusatz zum Einsatzstichwort */
+.mission-header-grid .mission-freetext {
+    color: #f0f1f3;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.35;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 42px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
