@@ -40,6 +40,69 @@ public class AttendanceService(IDbContextFactory<AppDbContext> factory, AppState
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<List<Vehicle>> GetActivityVehiclesAsync(
+        Guid activityId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(cancellationToken);
+
+        return await db.ActivityVehicles.AsNoTracking()
+            .Where(x => x.ActivityId == activityId)
+            .Select(x => x.Vehicle)
+            .OrderBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task AddActivityVehicleAsync(
+        Guid activityId,
+        Guid vehicleId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(cancellationToken);
+
+        var activity = await db.Activities.SingleAsync(
+            x => x.Id == activityId, cancellationToken);
+        EnsureOpen(activity);
+
+        var vehicleExists = await db.Vehicles.AnyAsync(
+            x => x.Id == vehicleId && x.IsActive, cancellationToken);
+
+        if (!vehicleExists)
+            throw new InvalidOperationException(
+                "Das Fahrzeug ist nicht verfügbar.");
+
+        var alreadyAdded = await db.ActivityVehicles.AnyAsync(
+            x => x.ActivityId == activityId && x.VehicleId == vehicleId,
+            cancellationToken);
+
+        if (alreadyAdded)
+            return;
+
+        db.ActivityVehicles.Add(new ActivityVehicle
+        {
+            ActivityId = activityId,
+            VehicleId = vehicleId
+        });
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Ein anderer Benutzer könnte dasselbe Fahrzeug gleichzeitig
+            // hinzugefügt haben. Nur diesen Fall als Erfolg behandeln.
+            var existsNow = await db.ActivityVehicles.AsNoTracking().AnyAsync(
+                x => x.ActivityId == activityId && x.VehicleId == vehicleId,
+                cancellationToken);
+
+            if (!existsNow)
+                throw;
+        }
+
+        state.NotifyChanged();
+    }
+
     public async Task<List<Attendance>> GetAttendancesAsync(Guid activityId, CancellationToken cancellationToken = default)
     {
         await using var db = await factory.CreateDbContextAsync(cancellationToken);

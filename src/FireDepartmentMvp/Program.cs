@@ -271,6 +271,8 @@ app.MapGet("/api/alarm/fe2", async (
     }
 });
 
+app.MapStaticAssets();
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

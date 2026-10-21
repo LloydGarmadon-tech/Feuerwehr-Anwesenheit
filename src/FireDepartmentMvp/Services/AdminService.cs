@@ -63,28 +63,60 @@ public class AdminService(IDbContextFactory<AppDbContext> factory, AppState stat
             .OrderBy(x => x.Name).ToListAsync();
     }
 
-    public async Task<Vehicle> SaveVehicleAsync(Guid? id, string name, string callSign, bool isActive)
+
+public async Task<Vehicle> SaveVehicleAsync(
+    Guid? id,
+    string name,
+    string callSign,
+    bool isActive,
+    string fe2Identifier,
+    bool useSeatAssignment)
+{
+    if (string.IsNullOrWhiteSpace(name))
+        throw new InvalidOperationException(
+            "Der Fahrzeugname ist erforderlich.");
+
+    name = name.Trim();
+    callSign = callSign?.Trim() ?? string.Empty;
+    fe2Identifier = fe2Identifier?.Trim() ?? string.Empty;
+
+    await using var db = await factory.CreateDbContextAsync();
+
+    if (!string.IsNullOrEmpty(fe2Identifier))
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new InvalidOperationException("Der Fahrzeugname ist erforderlich.");
+        var duplicate = await db.Vehicles.AnyAsync(x =>
+            x.Fe2Identifier == fe2Identifier &&
+            (!id.HasValue || x.Id != id.Value));
 
-        await using var db = await factory.CreateDbContextAsync();
-        Vehicle vehicle;
-        if (id.HasValue)
-            vehicle = await db.Vehicles.SingleAsync(x => x.Id == id.Value);
-        else
-        {
-            vehicle = new Vehicle();
-            db.Vehicles.Add(vehicle);
-        }
-
-        vehicle.Name = name.Trim();
-        vehicle.CallSign = callSign?.Trim() ?? string.Empty;
-        vehicle.IsActive = isActive;
-        await db.SaveChangesAsync();
-        state.NotifyChanged();
-        return vehicle;
+        if (duplicate)
+            throw new InvalidOperationException(
+                "Diese FE2-Kennung ist bereits einem anderen Fahrzeug zugeordnet.");
     }
+
+    Vehicle vehicle;
+
+    if (id.HasValue)
+    {
+        vehicle = await db.Vehicles.SingleAsync(x => x.Id == id.Value);
+    }
+    else
+    {
+        vehicle = new Vehicle();
+        db.Vehicles.Add(vehicle);
+    }
+
+    vehicle.Name = name;
+    vehicle.CallSign = callSign;
+    vehicle.Fe2Identifier = fe2Identifier;
+    vehicle.UseSeatAssignment = useSeatAssignment;
+    vehicle.IsActive = isActive;
+
+    await db.SaveChangesAsync();
+    state.NotifyChanged();
+
+    return vehicle;
+}
+
 
     public async Task AddSeatAsync(Guid vehicleId, string name)
     {

@@ -117,6 +117,8 @@ public class Vehicle
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = string.Empty;
     public string CallSign { get; set; } = string.Empty;
+    public string Fe2Identifier { get; set; } = string.Empty;
+    public bool UseSeatAssignment { get; set; } = true;
     public bool IsActive { get; set; } = true;
     public List<VehicleSeat> Seats { get; set; } = new();
 }

@@ -90,8 +90,27 @@ else
                 <label class="field-label">Bezeichnung</label>
                 <input class="text-input" @bind="vehicleName" />
                 <label class="field-label">Funkrufname</label>
-                <input class="text-input" @bind="callSign" />
-                <label class="check-card"><input type="checkbox" @bind="vehicleActive" /> Aktiv</label>
+<input class="text-input" @bind="callSign" />
+
+<label class="field-label">FE2-Fahrzeugkennung</label>
+<input class="text-input"
+       @bind="fe2Identifier"
+       placeholder="z. B. Fl RZ 20-46-01" />
+
+<p class="hint">
+    Kennung, die FE2 im Feld Einsatzmittel übermittelt.
+    Für die automatische Fahrzeugzuordnung muss sie eindeutig sein.
+</p>
+
+<label class="check-card">
+    <input type="checkbox" @bind="useSeatAssignment" />
+    Sitzplatzverwaltung verwenden
+</label>
+
+<label class="check-card">
+    <input type="checkbox" @bind="vehicleActive" />
+    Aktiv
+</label>
                 <div class="modal-actions">
                     <button class="touch-button ghost" @onclick="ResetVehicle">Neu</button>
                     <button class="touch-button primary" @onclick="SaveVehicleAsync">Speichern</button>
@@ -174,6 +193,8 @@ else
 
     private Guid? personId; private string firstName=""; private string lastName=""; private Guid groupId; private bool personActive=true; private HashSet<Guid> selectedQualifications=new();
     private Guid? vehicleId; private string vehicleName=""; private string callSign=""; private bool vehicleActive=true; private string newSeatName="";
+private string fe2Identifier = "";
+private bool useSeatAssignment = true;
     private Guid? qualificationId; private string qualificationName=""; private string qualificationShort=""; private bool qualificationActive=true;
     private Guid? eventTypeId; private string eventTypeName=""; private AttendanceLayout eventLayout=AttendanceLayout.SingleList; private int eventSort=100; private bool eventActive=true;
 
@@ -183,9 +204,48 @@ else
     private void EditPerson(Firefighter p) { personId=p.Id; firstName=p.FirstName; lastName=p.LastName; groupId=p.GroupId; personActive=p.IsActive; selectedQualifications=p.Qualifications.Select(x=>x.QualificationId).ToHashSet(); }
     private void ResetPerson() { personId=null; firstName=lastName=""; groupId=groups.FirstOrDefault(x=>x.IsActive)?.Id ?? Guid.Empty; personActive=true; selectedQualifications.Clear(); }
     private async Task SavePersonAsync() => await RunAsync(async()=>{ await AdminService.SaveFirefighterAsync(personId,firstName,lastName,groupId,personActive,selectedQualifications); await ReloadAsync(); ResetPerson(); },"Person gespeichert.");
-    private void EditVehicle(Vehicle v) { vehicleId=v.Id; vehicleName=v.Name; callSign=v.CallSign; vehicleActive=v.IsActive; newSeatName=""; }
-    private void ResetVehicle() { vehicleId=null; vehicleName=callSign=newSeatName=""; vehicleActive=true; }
-    private async Task SaveVehicleAsync() => await RunAsync(async()=>{ var v=await AdminService.SaveVehicleAsync(vehicleId,vehicleName,callSign,vehicleActive); vehicleId=v.Id; await ReloadAsync(); EditVehicle(vehicles.Single(x=>x.Id==v.Id)); },"Fahrzeug gespeichert.");
+    private void EditVehicle(Vehicle v)
+{
+    vehicleId = v.Id;
+    vehicleName = v.Name;
+    callSign = v.CallSign;
+    fe2Identifier = v.Fe2Identifier;
+    useSeatAssignment = v.UseSeatAssignment;
+    vehicleActive = v.IsActive;
+    newSeatName = "";
+}
+
+private void ResetVehicle()
+{
+    vehicleId = null;
+    vehicleName = "";
+    callSign = "";
+    fe2Identifier = "";
+    useSeatAssignment = true;
+    vehicleActive = true;
+    newSeatName = "";
+}
+
+private async Task SaveVehicleAsync()
+{
+    await RunAsync(async () =>
+    {
+        var vehicle = await AdminService.SaveVehicleAsync(
+            vehicleId,
+            vehicleName,
+            callSign,
+            vehicleActive,
+            fe2Identifier,
+            useSeatAssignment);
+
+        vehicleId = vehicle.Id;
+
+        await ReloadAsync();
+
+        EditVehicle(vehicles.Single(x => x.Id == vehicle.Id));
+    }, "Fahrzeug gespeichert.");
+}
+
     private async Task AddSeatAsync() { if (!vehicleId.HasValue) return; await RunAsync(async()=>{await AdminService.AddSeatAsync(vehicleId.Value,newSeatName); newSeatName=""; await ReloadAsync();},"Sitzplatz hinzugefügt."); }
     private async Task ToggleSeatAsync(Guid id) => await RunAsync(async()=>{await AdminService.ToggleSeatAsync(id); await ReloadAsync();},"Sitzplatz geändert.");
     private void EditQualification(Qualification q) { qualificationId=q.Id; qualificationName=q.Name; qualificationShort=q.ShortName; qualificationActive=q.IsActive; }

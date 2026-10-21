@@ -171,8 +171,20 @@ else
                                                     ? $"vor {(int)elapsed.TotalHours} Stunden"
                                                     : $"vor {(int)elapsed.TotalDays} Tagen";
                                 }
-                                @elapsedText
+                                                        @elapsedText
                             </div>
+
+                            @{
+                                var fe2Number = SelectedActivity.MissionDetails.ExternalId?.Trim();
+                            }
+                            @if (fe2Number is { Length: 10 } &&
+                                 fe2Number.All(char.IsDigit))
+                            {
+                                <div class="mission-info-relative"
+                                     style="margin-top: 8px;">
+                                    FE2-Nr.: <strong>@fe2Number</strong>
+                                </div>
+                            }
                         </div>
 
                         <div class="mission-info-item">
@@ -208,25 +220,73 @@ else
                     </div>
 
                     <div class="mission-head-resources">
-                        @if (!string.IsNullOrWhiteSpace(SelectedActivity.MissionDetails.AlarmedResources))
-                        {
-                            var resources = SelectedActivity.MissionDetails.AlarmedResources
+                        @{
+                            var resources = (SelectedActivity.MissionDetails?.AlarmedResources ?? "")
                                 .Split(new[] { '\r', '\n' },
                                     StringSplitOptions.RemoveEmptyEntries |
                                     StringSplitOptions.TrimEntries);
+                        }
 
-                            <div class="mission-resources">
-                                <div class="mission-resources-heading">
-                                    🚒 @resources.Length alarmierte Einsatzmittel
-                                </div>
-                                <div class="mission-resources-list">
-                                    @foreach (var resource in resources)
+                        <div class="mission-resources">
+                            <div class="mission-resources-heading"
+                                 style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                                <span>🚒 @resources.Length alarmierte Einsatzmittel</span>
+                                <button type="button"
+                                        style="flex-shrink:0; padding:4px 8px; font-size:0.8rem; border:1px solid #777; border-radius:5px; background:transparent; color:inherit; cursor:pointer;"
+                                        @onclick="() => showAddVehicleDialog = !showAddVehicleDialog">
+                                    + Hinzufügen
+                                </button>
+                            </div>
+
+                            <div class="mission-resources-list">
+                                @foreach (var resource in resources)
+                                {
+                                    var isKnown = vehicles.Any(v =>
+                                        !string.IsNullOrWhiteSpace(v.Fe2Identifier) &&
+                                        string.Equals(
+                                            v.Fe2Identifier.Trim(),
+                                            resource.Trim(),
+                                            StringComparison.OrdinalIgnoreCase));
+
+                                    <div class="mission-resource"
+                                         style="display:flex; align-items:center; justify-content:space-between; gap:5px;">
+                                        <span>@resource</span>
+
+                                        @if (!isKnown)
+                                        {
+                                            <span title="Fahrzeug nicht zugeordnet"
+                                                  aria-label="Fahrzeug nicht zugeordnet"
+                                                  style="color:#fbbf24; flex-shrink:0; cursor:help;"
+                                                  onclick="this.title='Fahrzeug nicht zugeordnet'; alert(this.title)">
+                                                ⚠
+                                            </span>
+                                        }
+                                    </div>
+                                }
+
+                                @foreach (var vehicle in additionalVehicles)
+                                {
+                                    <div class="mission-resource">+ @vehicle.Name</div>
+                                }
+                            </div>
+
+
+
+                            @if (showAddVehicleDialog)
+                            {
+                                <div style="margin-top:8px; max-width:300px;">
+                                    @foreach (var vehicle in vehicles
+                                        .Where(x => !AvailableMissionVehicles.Any(v => v.Id == x.Id)))
                                     {
-                                        <div class="mission-resource">@resource</div>
+                                        <button type="button"
+                                                style="display:block; width:100%; text-align:left; margin:3px 0; padding:6px 9px; border:1px solid #999; border-radius:5px; background:transparent; color:inherit; cursor:pointer;"
+                                                @onclick="() => AddMissionVehicleAsync(vehicle.Id)">
+                                            @vehicle.Name
+                                        </button>
                                     }
                                 </div>
-                            </div>
-                        }
+                            }
+                        </div>
                     </div>
                 }
 
@@ -421,7 +481,7 @@ else
                 {
                     <h3>Fahrzeug auswählen</h3>
                     <div class="vehicle-grid">
-                        @foreach (var vehicle in vehicles)
+                        @foreach (var vehicle in AvailableMissionVehicles)
                         {
                             <button class="vehicle-card" @onclick="() => ChooseVehicle(vehicle)">
                                 <strong>@vehicle.Name</strong>
@@ -482,6 +542,9 @@ else
     private List<Firefighter> visibleFirefighters = new();
     private List<Attendance> attendances = new();
     private List<Vehicle> vehicles = new();
+    private List<Vehicle> additionalVehicles = new();
+    private bool showAddVehicleDialog;
+
     private string memberSearch = string.Empty;
     private string memberStatusFilter = "all";
     private string memberQualificationFilter = "";
@@ -509,6 +572,40 @@ else
     private MissionStep missionStep = MissionStep.Status;
 
     private Activity? SelectedActivity => activities.FirstOrDefault(x => x.Id == selectedActivityId);
+    private List<Vehicle> AvailableMissionVehicles
+    {
+        get
+        {
+            var resources = SelectedActivity?.MissionDetails?.AlarmedResources?
+                .Split(
+                    new[] { '\r', '\n' },
+                    StringSplitOptions.RemoveEmptyEntries |
+                    StringSplitOptions.TrimEntries)
+                ?? Array.Empty<string>();
+
+            var alarmed = new HashSet<string>(
+                resources, StringComparer.OrdinalIgnoreCase);
+
+            var additionalIds = additionalVehicles
+                .Select(x => x.Id)
+                .ToHashSet();
+
+            var assignedIds = attendances
+                .Where(x => x.VehicleId.HasValue)
+                .Select(x => x.VehicleId!.Value)
+                .ToHashSet();
+
+            return vehicles
+                .Where(x =>
+                    (!string.IsNullOrWhiteSpace(x.Fe2Identifier) &&
+                     alarmed.Contains(x.Fe2Identifier.Trim())) ||
+                    additionalIds.Contains(x.Id) ||
+                    assignedIds.Contains(x.Id))
+                .OrderBy(x => x.Name)
+                .ToList();
+        }
+    }
+
     private Attendance? SelectedAttendance => selectedFirefighter is null ? null : attendances.FirstOrDefault(x => x.FirefighterId == selectedFirefighter.Id);
 
     protected override async Task OnInitializedAsync()
@@ -545,11 +642,13 @@ else
     {
         attendances = new();
         visibleFirefighters = new();
+        additionalVehicles = new();
 
         if (SelectedActivity is null)
             return;
 
         attendances = await AttendanceService.GetAttendancesAsync(SelectedActivity.Id);
+        additionalVehicles = await AttendanceService.GetActivityVehiclesAsync(SelectedActivity.Id);
 
         if (SelectedActivity.Kind == ActivityKind.Event && SelectedActivity.EventType?.Layout == AttendanceLayout.FiveGroups)
         {
@@ -602,6 +701,18 @@ else
         });
     }
 
+    private async Task AddMissionVehicleAsync(Guid vehicleId)
+    {
+        if (SelectedActivity is null)
+            return;
+
+        await AttendanceService.AddActivityVehicleAsync(
+            SelectedActivity.Id, vehicleId);
+
+        showAddVehicleDialog = false;
+        await ReloadAsync();
+    }
+
     private void ChooseResponded() => missionStep = MissionStep.Vehicle;
 
     private async Task SetStandbyAsync()
@@ -617,11 +728,18 @@ else
         });
     }
 
-    private void ChooseVehicle(Vehicle vehicle)
+private async Task ChooseVehicle(Vehicle vehicle)
+{
+    selectedVehicle = vehicle;
+
+    if (!vehicle.UseSeatAssignment)
     {
-        selectedVehicle = vehicle;
-        missionStep = MissionStep.Seat;
+        await SaveRespondedAsync(null);
+        return;
     }
+
+    missionStep = MissionStep.Seat;
+}
 
     private async Task SaveRespondedAsync(Guid? seatId)
     {

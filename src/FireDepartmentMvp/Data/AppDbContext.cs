@@ -13,11 +13,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Qualification> Qualifications => Set<Qualification>();
     public DbSet<FirefighterQualification> FirefighterQualifications => Set<FirefighterQualification>();
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
+    public DbSet<ActivityVehicle> ActivityVehicles => Set<ActivityVehicle>();
     public DbSet<VehicleSeat> VehicleSeats => Set<VehicleSeat>();
     public DbSet<Attendance> Attendances => Set<Attendance>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<ActivityVehicle>()
+            .HasKey(x => new { x.ActivityId, x.VehicleId });
+
+        modelBuilder.Entity<ActivityVehicle>()
+            .HasOne(x => x.Activity)
+            .WithMany()
+            .HasForeignKey(x => x.ActivityId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ActivityVehicle>()
+            .HasOne(x => x.Vehicle)
+            .WithMany()
+            .HasForeignKey(x => x.VehicleId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+
         modelBuilder.Entity<MissionDetails>()
             .HasKey(x => x.ActivityId);
 
