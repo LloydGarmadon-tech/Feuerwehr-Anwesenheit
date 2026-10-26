@@ -292,7 +292,8 @@ else
                                                     <input type="checkbox"
                                                            checked="@selectedVehicleIds.Contains(vehicle.Id)"
                                                            @onchange="e => ToggleVehicleSelection(vehicle.Id, e.Value is true)" />
-                                                    <span>@vehicle.Name</span>
+                                                    <span class="vehicle-dialog-name">@vehicle.Name</span>
+                                                    <span class="vehicle-dialog-radio">@vehicle.Fe2Identifier</span>
                                                 </label>
                                             }
 

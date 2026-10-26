@@ -1050,12 +1050,23 @@ html, body {
 }
 
 .vehicle-dialog-item {
-    display: flex;
+    display: grid;
+    grid-template-columns: 24px minmax(0, 3fr) minmax(0, 2fr);
     align-items: center;
-    gap: 12px;
+    column-gap: 12px;
     padding: 10px;
     border-bottom: 1px solid #475569;
     cursor: pointer;
+}
+
+.vehicle-dialog-name,
+.vehicle-dialog-radio {
+    min-width: 0;
+    text-align: left;
+}
+
+.vehicle-dialog-radio {
+    font-variant-numeric: tabular-nums;
 }
 
 .vehicle-dialog-item input {
