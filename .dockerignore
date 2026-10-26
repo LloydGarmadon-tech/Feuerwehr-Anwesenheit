@@ -1,0 +1,11 @@
+.git
+.gitignore
+docker-test-data/
+**/bin/
+**/obj/
+**/*.before-*
+**/*.bak-*
+**/*.header-backup
+**/*.layout-backup
+**/*.pre-layout
+**/*.Zone.Identifier
