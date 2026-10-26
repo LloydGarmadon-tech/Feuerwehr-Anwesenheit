@@ -122,9 +122,26 @@ else
                     <div class="inline-form"><input class="text-input" placeholder="z. B. Fahrer" @bind="newSeatName" /><button class="touch-button secondary" @onclick="AddSeatAsync">+ Platz</button></div>
                     @foreach (var seat in vehicles.First(x => x.Id == vehicleId.Value).Seats.OrderBy(x => x.SortOrder))
                     {
-                        <button class="admin-row compact @(!seat.IsActive ? "inactive" : null)" @onclick="() => ToggleSeatAsync(seat.Id)">
-                            <strong>@seat.SortOrder. @seat.Name</strong><span>@(seat.IsActive ? "aktiv · zum Deaktivieren antippen" : "deaktiviert · zum Aktivieren antippen")</span>
-                        </button>
+                        <div class="admin-row compact @(!seat.IsActive ? "inactive" : null)">
+                            @if (editingSeatId == seat.Id)
+                            {
+                                <div class="inline-form">
+                                    <input class="text-input" @bind="editingSeatName" />
+                                    <button class="touch-button primary" @onclick="SaveSeatNameAsync">Speichern</button>
+                                    <button class="touch-button ghost" @onclick="CancelEditSeat">Abbrechen</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <strong>@seat.SortOrder. @seat.Name</strong>
+                                <div class="inline-form">
+                                    <button class="touch-button secondary" @onclick="() => StartEditSeat(seat)">Bearbeiten</button>
+                                    <button class="touch-button ghost" @onclick="() => ToggleSeatAsync(seat.Id)">
+                                        @(seat.IsActive ? "Deaktivieren" : "Aktivieren")
+                                    </button>
+                                </div>
+                            }
+                        </div>
                     }
                 }
             </div>
@@ -248,6 +265,33 @@ private async Task SaveVehicleAsync()
 
     private async Task AddSeatAsync() { if (!vehicleId.HasValue) return; await RunAsync(async()=>{await AdminService.AddSeatAsync(vehicleId.Value,newSeatName); newSeatName=""; await ReloadAsync();},"Sitzplatz hinzugefügt."); }
     private async Task ToggleSeatAsync(Guid id) => await RunAsync(async()=>{await AdminService.ToggleSeatAsync(id); await ReloadAsync();},"Sitzplatz geändert.");
+    private Guid? editingSeatId;
+    private string editingSeatName = "";
+
+    private void StartEditSeat(VehicleSeat seat)
+    {
+        editingSeatId = seat.Id;
+        editingSeatName = seat.Name;
+    }
+
+    private void CancelEditSeat()
+    {
+        editingSeatId = null;
+        editingSeatName = "";
+    }
+
+    private async Task SaveSeatNameAsync()
+    {
+        if (!editingSeatId.HasValue) return;
+
+        await RunAsync(async () =>
+        {
+            await AdminService.RenameSeatAsync(editingSeatId.Value, editingSeatName);
+            await ReloadAsync();
+            CancelEditSeat();
+        }, "Sitzplatz umbenannt.");
+    }
+
     private void EditQualification(Qualification q) { qualificationId=q.Id; qualificationName=q.Name; qualificationShort=q.ShortName; qualificationActive=q.IsActive; }
     private void ResetQualification() { qualificationId=null; qualificationName=qualificationShort=""; qualificationActive=true; }
     private async Task SaveQualificationAsync() => await RunAsync(async()=>{await AdminService.SaveQualificationAsync(qualificationId,qualificationName,qualificationShort,qualificationActive); await ReloadAsync(); ResetQualification();},"Qualifikation gespeichert.");

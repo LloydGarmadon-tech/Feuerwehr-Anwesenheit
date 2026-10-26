@@ -134,6 +134,20 @@ public async Task<Vehicle> SaveVehicleAsync(
         state.NotifyChanged();
     }
 
+    public async Task RenameSeatAsync(Guid seatId, string newName)
+    {
+        if (string.IsNullOrWhiteSpace(newName))
+            throw new InvalidOperationException("Der Sitzplatzname ist erforderlich.");
+
+        await using var db = await factory.CreateDbContextAsync();
+        var seat = await db.VehicleSeats.SingleOrDefaultAsync(x => x.Id == seatId)
+            ?? throw new InvalidOperationException("Sitzplatz nicht gefunden.");
+
+        seat.Name = newName.Trim();
+        await db.SaveChangesAsync();
+        state.NotifyChanged();
+    }
+
     public async Task ToggleSeatAsync(Guid seatId)
     {
         await using var db = await factory.CreateDbContextAsync();
