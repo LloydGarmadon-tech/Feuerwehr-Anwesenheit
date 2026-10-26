@@ -230,10 +230,10 @@ else
                         <div class="mission-resources">
                             <div class="mission-resources-heading"
                                  style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                                <span>🚒 @resources.Length alarmierte Einsatzmittel</span>
+                                <span>🚒 @AvailableMissionVehicles.Count Einsatzmittel</span>
                                 <button type="button"
                                         style="flex-shrink:0; padding:4px 8px; font-size:0.8rem; border:1px solid #777; border-radius:5px; background:transparent; color:inherit; cursor:pointer;"
-                                        @onclick="() => showAddVehicleDialog = !showAddVehicleDialog">
+                                        @onclick="OpenAddVehicleDialog">
                                     + Hinzufügen
                                 </button>
                             </div>
@@ -274,16 +274,48 @@ else
 
                             @if (showAddVehicleDialog)
                             {
-                                <div style="margin-top:8px; max-width:300px;">
-                                    @foreach (var vehicle in vehicles
-                                        .Where(x => !AvailableMissionVehicles.Any(v => v.Id == x.Id)))
-                                    {
-                                        <button type="button"
-                                                style="display:block; width:100%; text-align:left; margin:3px 0; padding:6px 9px; border:1px solid #999; border-radius:5px; background:transparent; color:inherit; cursor:pointer;"
-                                                @onclick="() => AddMissionVehicleAsync(vehicle.Id)">
-                                            @vehicle.Name
-                                        </button>
-                                    }
+                                <div class="vehicle-dialog-backdrop">
+                                    <div class="vehicle-dialog" role="dialog"
+                                         aria-modal="true"
+                                         aria-label="Fahrzeuge hinzufügen">
+                                        <h3>Fahrzeuge hinzufügen</h3>
+
+                                        <input class="text-input"
+                                               placeholder="Fahrzeug oder Funkrufname suchen"
+                                               @bind="vehicleSearch"
+                                               @bind:event="oninput" />
+
+                                        <div class="vehicle-dialog-list">
+                                            @foreach (var vehicle in SelectableMissionVehicles)
+                                            {
+                                                <label class="vehicle-dialog-item" @key="vehicle.Id">
+                                                    <input type="checkbox"
+                                                           checked="@selectedVehicleIds.Contains(vehicle.Id)"
+                                                           @onchange="e => ToggleVehicleSelection(vehicle.Id, e.Value is true)" />
+                                                    <span>@vehicle.Name</span>
+                                                </label>
+                                            }
+
+                                            @if (!SelectableMissionVehicles.Any())
+                                            {
+                                                <p>Keine weiteren Fahrzeuge gefunden.</p>
+                                            }
+                                        </div>
+
+                                        <div class="vehicle-dialog-actions">
+                                            <button type="button"
+                                                    class="touch-button ghost"
+                                                    @onclick="CloseAddVehicleDialog">
+                                                Abbrechen
+                                            </button>
+                                            <button type="button"
+                                                    class="touch-button primary"
+                                                    disabled="@(selectedVehicleIds.Count == 0)"
+                                                    @onclick="AddSelectedMissionVehiclesAsync">
+                                                Übernehmen (@selectedVehicleIds.Count)
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             }
                         </div>
@@ -544,6 +576,56 @@ else
     private List<Vehicle> vehicles = new();
     private List<Vehicle> additionalVehicles = new();
     private bool showAddVehicleDialog;
+    private string vehicleSearch = string.Empty;
+    private HashSet<Guid> selectedVehicleIds = new();
+
+    private IEnumerable<Vehicle> SelectableMissionVehicles =>
+        vehicles
+            .Where(v => !AvailableMissionVehicles.Any(a => a.Id == v.Id))
+            .Where(v =>
+                string.IsNullOrWhiteSpace(vehicleSearch) ||
+                v.Name.Contains(vehicleSearch.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                (v.Fe2Identifier?.Contains(vehicleSearch.Trim(), StringComparison.OrdinalIgnoreCase) ?? false))
+            .OrderBy(v => v.Name);
+
+    private void OpenAddVehicleDialog()
+    {
+        vehicleSearch = string.Empty;
+        selectedVehicleIds.Clear();
+        showAddVehicleDialog = true;
+    }
+
+    private void CloseAddVehicleDialog()
+    {
+        showAddVehicleDialog = false;
+        selectedVehicleIds.Clear();
+        vehicleSearch = string.Empty;
+    }
+
+    private void ToggleVehicleSelection(Guid vehicleId, bool isSelected)
+    {
+        if (isSelected)
+            selectedVehicleIds.Add(vehicleId);
+        else
+            selectedVehicleIds.Remove(vehicleId);
+    }
+
+    private async Task AddSelectedMissionVehiclesAsync()
+    {
+        if (SelectedActivity is null || selectedVehicleIds.Count == 0)
+            return;
+
+        var activityId = SelectedActivity.Id;
+        var availableIds = SelectableMissionVehicles.Select(v => v.Id).ToHashSet();
+
+        foreach (var vehicleId in selectedVehicleIds.Where(availableIds.Contains).ToList())
+        {
+            await AttendanceService.AddActivityVehicleAsync(activityId, vehicleId);
+        }
+
+        CloseAddVehicleDialog();
+        await ReloadAsync();
+    }
 
     private string memberSearch = string.Empty;
     private string memberStatusFilter = "all";

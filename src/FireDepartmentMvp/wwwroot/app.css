@@ -1009,3 +1009,65 @@ html, body {
     overscroll-behavior: contain;
 }
 
+
+/* Dialog zur Auswahl zusätzlicher Einsatzfahrzeuge */
+.vehicle-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.vehicle-dialog {
+    width: min(100%, 480px);
+    max-height: 85vh;
+    overflow: auto;
+    background: #182638;
+    color: white;
+    border: 1px solid #64748b;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.vehicle-dialog h3 {
+    margin: 0 0 16px;
+}
+
+.vehicle-dialog > input {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+}
+
+.vehicle-dialog-list {
+    max-height: 45vh;
+    overflow-y: auto;
+}
+
+.vehicle-dialog-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-bottom: 1px solid #475569;
+    cursor: pointer;
+}
+
+.vehicle-dialog-item input {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.vehicle-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
